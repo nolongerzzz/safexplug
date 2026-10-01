@@ -96,15 +96,15 @@
   let railSeen = false, railTimer = null, railShown = -1, railAt = 0, railWant = -1;
   function railApply(stage) {
     const rail = $('rail'); railShown = stage; railAt = Date.now();
-    rail.hidden = false; rail.className = 'rail s' + stage;
+    rail.className = 'rail s' + stage;
     clearTimeout(railTimer);
-    if (stage === 3) railTimer = setTimeout(() => { rail.hidden = true; railShown = -1; railSeen = false; }, 2200);
+    if (stage === 3) railTimer = setTimeout(() => { rail.classList.add('off'); railShown = -1; railSeen = false; }, 2200);
   }
   function renderRail() {
     const rail = $('rail');
-    if (!waiting && !running) { clearTimeout(railTimer); rail.hidden = true; railSeen = false; railShown = -1; railWant = -1; return; }
+    if (!waiting && !running) { clearTimeout(railTimer); rail.classList.add('off'); railSeen = false; railShown = -1; railWant = -1; return; }
     const stage = waiting ? (node.state === 'synced' ? 1 : 0) : (stats.connected ? 3 : 2);
-    if (stage === 3 && !railSeen && railShown < 0) { rail.hidden = true; return; }  // already mining when the app opened
+    if (stage === 3 && !railSeen && railShown < 0) { rail.classList.add('off'); return; }  // already mining when the app opened
     railSeen = true; railWant = stage;
     if (stage <= railShown && railShown !== 3) { if (stage === railShown) return; }
     const wait = railShown < 0 ? 0 : Math.max(0, 1100 - (Date.now() - railAt));

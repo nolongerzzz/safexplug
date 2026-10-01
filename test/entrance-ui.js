@@ -10,7 +10,7 @@ require('../src/main.js');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 app.whenReady().then(async () => {
   const wc = BrowserWindow.getAllWindows()[0].webContents;
-  const R = () => wc.executeJavaScript("(()=>{const r=document.getElementById('rail');return (r.hidden?'hidden':r.className)+' | '+document.getElementById('statusText').textContent+' | chip:'+document.getElementById('nodeChip').className})()"); for (let i = 0; i < 8; i++) { console.log(i, await R()); await wait(1500); }
+  const R = () => wc.executeJavaScript("(()=>{const r=document.getElementById('rail');return r.className+' | '+document.getElementById('statusText').textContent+' | chip:'+document.getElementById('nodeChip').className})()"); for (let i = 0; i < 8; i++) { console.log(i, await R()); await wait(1500); }
   console.log('status:', await wc.executeJavaScript(`document.getElementById('statusText').textContent+' | tip: '+document.getElementById('statusText').title+' | button: '+document.getElementById('go').textContent`));
   fs.writeFileSync(path.join(process.env.SHOT_DIR, 'cd.png'), (await wc.capturePage()).toPNG());
   app.exit(0);

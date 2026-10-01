@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.4
+
+- The green progress bar no longer "skips out": when mining is up it fades and the page eases up into the space instead of jumping about 20 px in one frame. The bar also changes colour step by step (amber to green) instead of stretching a gradient.
+
 ## What's new in 3.0.3
 
 - Fixed the full-speed launcher: it used `sudo -E`, which the passwordless rule does not allow ("not allowed to preserve the environment"). The rule already keeps the screen variables, so `-E` is gone.

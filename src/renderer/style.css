@@ -139,9 +139,10 @@ input[readonly]{opacity:.85}
 .light,.dot,.nodechip,.go{transition:background .6s ease,box-shadow .6s ease,border-color .6s ease,color .6s ease}
 .nodechip.justsynced{animation:chipglow 1.6s ease-out 1;border-color:var(--ok)}
 #statusText.swap{animation:textin .45s ease-out}
-.rail{height:3px;border-radius:2px;background:#1b3249;margin:-4px 0 10px;overflow:hidden}
-.rail i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--warn),var(--ok));transition:width .9s ease-in-out}
-.rail.s0 i{width:8%}.rail.s1 i{width:36%}.rail.s2 i{width:70%}.rail.s3 i{width:100%}
+.rail{height:3px;border-radius:2px;background:#1b3249;margin:-4px 0 10px;overflow:hidden;opacity:1;transition:opacity .7s ease,height 1s ease-in-out .5s,margin 1s ease-in-out .5s}
+.rail.off{opacity:0;height:0;margin:-12px 0 0}
+.rail i{display:block;height:100%;width:0;background:var(--warn);transition:width .9s ease-in-out,background-color .9s ease}
+.rail.s0 i{width:8%}.rail.s1 i{width:36%}.rail.s2 i{width:70%}.rail.s2 i{background:#9bc04a}.rail.s3 i{width:100%;background:var(--ok)}
 @media (prefers-reduced-motion:reduce){.app,#mineView .strip .tile,.nodechip.justsynced,#statusText.swap{animation:none}}
 
 /* warning banner eases in and out instead of pushing the page down in one jump */
