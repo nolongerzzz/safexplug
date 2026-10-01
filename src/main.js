@@ -236,8 +236,13 @@ async function pollWallet() {
   if (!s.walletRpc) { lastPay = { state: 'off' }; send('wallet:status', lastPay); return; }
   if (Date.now() - payAt < 30000) return;
   payAt = Date.now();
-  lastPay = await wallet.summary(s.walletRpc.trim(), s.miningSince || 0);
-  lastPay.miningSince = s.miningSince || 0;
+  // With the app-managed view-only wallet, count EVERYTHING it has found: it only
+  // scans from the block chosen at setup, so that is already the start of the tally
+  // and nothing can be hidden by a date filter.
+  const managed = wsetup.status(walletDir()).wallet;
+  const since = managed ? 0 : (s.miningSince || 0);
+  lastPay = await wallet.summary(s.walletRpc.trim(), since);
+  lastPay.miningSince = since; lastPay.managed = managed; lastPay.scanFrom = s.walletScanFrom || 0;
   send('wallet:status', lastPay);
 }
 
@@ -324,7 +329,12 @@ app.whenReady().then(() => {
     wsBusy = true;
     try { return await wsetup.download(walletDir(), (l) => send('wsetup:log', l)); } finally { wsBusy = false; }
   });
-  ipcMain.handle('wsetup:add', (_e, o) => wsetup.addWallet(walletDir(), { node: walletNode(), height: Math.max(0, Math.floor(Number(o && o.height) || 0)) }));
+  ipcMain.handle('wsetup:add', (_e, o) => {
+    const height = Math.max(0, Math.floor(Number(o && o.height) || 0));
+    const r = wsetup.addWallet(walletDir(), { node: walletNode(), height });
+    if (r.ok) settings.set({ walletScanFrom: height });
+    return r;
+  });
   ipcMain.handle('wsetup:remove', async () => {
     const c = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Cancel', 'Remove view-only wallet'], defaultId: 0, cancelId: 0,
       title: 'Remove wallet', message: 'Remove the view-only wallet from this app?', detail: 'This deletes only the view-only copy kept by this app. Your real wallet is not touched.' });

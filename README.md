@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.7.6
+
+- Payments now counts **everything the view-only wallet has found** (it only scans from the block you chose at setup, which is the start of the tally: "everything found since block N"). Payments from before an old tally reset reappear; nothing can be hidden by a start date anymore.
+
 ## What's new in 2.7.5
 
 - Payments: the wallet-tool address box is gone on Linux (the app handles it). Only your public address and private view key are ever entered, and the view key only in the wallet tool's own window. The box appears only on systems without one-click setup.

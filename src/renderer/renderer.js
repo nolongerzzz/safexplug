@@ -439,7 +439,7 @@
     $('pState').textContent = payNote || msgs[p.state] || '';
     const ok = p.state === 'ok';
     $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
-    $('pSince').textContent = p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'counts from your first mining start';
+    $('pSince').textContent = p.managed ? (p.scanFrom ? `everything found since block ${p.scanFrom.toLocaleString()}` : 'everything your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'counts from your first mining start';
     $('pCount').textContent = ok ? String(p.count) : '0';
     $('pMined').textContent = ok && p.mined ? `${p.mined} mined block${p.mined === 1 ? '' : 's'}` : '';
     $('pLatest').textContent = ok && p.latest ? fmtWhen(p.latest) : '—';

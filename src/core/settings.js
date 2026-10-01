@@ -19,6 +19,7 @@ const DEFAULTS = {
   apiPort: 18080,
   apiToken: '',
   walletRpc: '',           // host:port of a wallet-rpc on this machine (payments tally)
+  walletScanFrom: 0,       // block the app-managed view-only wallet scans from (shown as the tally's start)
   miningSince: 0,          // unix seconds: payments are counted from here (set at first mining start)
   rigs: [],                // other miners to watch: [{name, host, port, token}]
 };
