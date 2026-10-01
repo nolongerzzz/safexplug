@@ -176,7 +176,7 @@ const installDockerLinux = () => pkexecScript(LINUX_INSTALL_SCRIPT);
 const startDockerEngineLinux = () => pkexecScript(LINUX_START_SCRIPT);
 
 module.exports = {
-  CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode,
+  run, Streamer, CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode,
   buildImage, followLogs, installPlan, installDockerLinux, startDockerEngineLinux,
   LINUX_INSTALL_SCRIPT, LINUX_START_SCRIPT,
 };

@@ -73,3 +73,11 @@ footer{color:var(--mute);font-size:11px;text-align:center}
 input[readonly]{opacity:.85}
 
 .panel > label.check{align-self:flex-start;padding-bottom:0}
+
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.result{border-radius:8px;padding:9px 12px;font-size:13px;background:#12361f;color:#bff0d0;border:1px solid #1f6b3a}
+.result.warn{background:#3a2f12;color:#ffd98a;border-color:#7a5f1c}
+.result.bad{background:#3a1a16;color:#ffb3a8;border-color:#7a2f26}
+#nLog .placeholder{color:var(--mute);font-style:italic}
+#nLog .l-app{color:var(--accent)}
+.mini:disabled{opacity:.45;cursor:default}

@@ -1,8 +1,14 @@
-# Safex Community Miner 2.3
+# Safex Community Miner 2.4
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
-## What's new in 2.3
+## What's new in 2.4
+
+- **Node output now works**: everything the node printed is replayed when the window opens (before, lines printed during startup were lost), and a status line appears every 30 seconds so a quiet, synced node doesn't look dead.
+- **Maintenance** on the Node tab (node must be stopped): **Health check** (reads every block record, read-only), **Back up chain** (full copy into a Docker volume, with a free-space check and automatic cleanup if it fails), **Restore backup** (newest complete backup, with a confirmation), and **Rebuild image** (fetches a fresh node image, chain untouched).
+- Maintenance works on the node's **real data volume**, read from the running container, never an assumed name, and never creates an empty volume by mistake. Backup names can't collide.
+
+## What was new in 2.3
 
 - **Network hashrate** next to the logo, estimated from network difficulty (from your node, or the public node if you have none; switch off with `publicFallback` in settings).
 - **Rigs tab**: add other miners by address and access token and see each one's status, hashrate, threads, shares and uptime, plus the **combined hashrate for your wallet**. Rigs mining to a different wallet are flagged and left out of the combined total. Any xmrig miner with its HTTP API enabled works. For this app, tick "Share this miner's stats" to get the address and token to paste on the other machine. Use the Tailscale address so it works from anywhere without opening your router.

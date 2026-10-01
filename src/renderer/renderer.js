@@ -170,7 +170,7 @@
       $(t + 'View').hidden = t !== name;
       $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
     }
-    if (name === 'node') window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
+    if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
   }
   $('tabBtnMine').onclick = () => showTab('mine');
@@ -180,21 +180,88 @@
   // ---- node panel ---------------------------------------------------------
   let panel = null;
   const nLog = $('nLog');
-  function addNodeLog(line) {
+  let lastSeq = 0;
+  function showPlaceholder() {
+    if (nLog.childElementCount) return;
+    const d = document.createElement('div'); d.className = 'placeholder';
+    d.textContent = 'Waiting for node output… A synced node is quiet; a status line appears here every 30 seconds while it runs.';
+    nLog.appendChild(d);
+  }
+  function addNodeLog(entry) {
+    if (typeof entry === 'string') entry = { n: lastSeq + 1, t: entry };
+    if (entry.n <= lastSeq) return;           // already shown (replay overlap)
+    lastSeq = entry.n;
+    const ph = nLog.querySelector('.placeholder'); if (ph) ph.remove();
+    const line = entry.t;
     const div = document.createElement('div');
-    if (/error|failed|could not|did not finish/i.test(line)) div.className = 'l-err';
-    else if (/synced|successfully|is installed|is ready|started/i.test(line)) div.className = 'l-ok';
+    if (/^\[status\]/.test(line)) div.className = 'l-app';
+    else if (/^SUMMARY /.test(line)) div.className = /status=OK\b/.test(line) ? 'l-ok' : 'l-err';
+    else if (/\berror\b|failed|could not|did not finish|stopped:/i.test(line)) div.className = 'l-err';
+    else if (/synced|successfully|is installed|is ready|started|BACKUP_OK|RESTORE_OK/i.test(line)) div.className = 'l-ok';
     div.textContent = line.replace(/^\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d(?:\.\d+)?\s*/, '');
     div.title = line;
     nLog.appendChild(div);
     while (nLog.childElementCount > MAX_LINES) nLog.removeChild(nLog.firstChild);
     if ($('nFollow').checked) nLog.scrollTop = nLog.scrollHeight;
   }
-  $('nClear').onclick = () => { nLog.textContent = ''; };
+  $('nClear').onclick = () => { nLog.textContent = ''; showPlaceholder(); };
   $('nCopy').onclick = async () => {
-    await window.safex.copyText([...nLog.children].map((c) => c.title || c.textContent).join('\n'));
+    await window.safex.copyText([...nLog.children].filter((c) => !c.classList.contains('placeholder')).map((c) => c.title || c.textContent).join('\n'));
     const b = $('nCopy'); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1200);
   };
+
+  function applyRefresh(p) {
+    panel = p; renderNodePanel();
+    (p.log || []).forEach(addNodeLog);      // replay anything printed before we were ready
+    renderMaint();
+  }
+
+  // ---- maintenance ----------------------------------------------------------
+  let maintInfo = null;
+  async function loadMaint() { try { maintInfo = await window.safex.maintOverview(); } catch (_) { maintInfo = null; } renderMaint(); }
+  function renderMaint() {
+    if (!panel) return;
+    const d = panel.docker, busy = !!panel.busy;
+    const stopped = d.engine === 'ok' && d.container !== 'running' && d.container !== 'restarting';
+    const haveImage = d.image;
+    let info;
+    if (d.engine !== 'ok') info = 'Docker is not ready yet. Set it up above first.';
+    else if (!stopped) info = 'Stop the node to use these. They work on the chain data while the node is not running.';
+    else if (!haveImage) info = 'Build the node image first (press Start node once, or Rebuild image).';
+    else info = maintInfo
+      ? `${maintInfo.data ? 'Chain data found' : 'No chain data yet'} · ${maintInfo.backups} backup${maintInfo.backups === 1 ? '' : 's'}${maintInfo.newest ? ' · newest ' + maintInfo.newest.replace('safex-node-backup-', '') : ''}`
+      : 'Reading status…';
+    $('maintInfo').textContent = info;
+    const can = stopped && haveImage && !busy;
+    $('mHealth').disabled = !(can && maintInfo && maintInfo.data);
+    $('mBackup').disabled = !(can && maintInfo && maintInfo.data);
+    $('mRestore').disabled = !(can && maintInfo && maintInfo.backups > 0);
+    $('mRebuild').disabled = !(d.engine === 'ok' && !busy);
+  }
+  async function runMaint(kind) {
+    ['mHealth', 'mBackup', 'mRestore', 'mRebuild'].forEach((id) => ($(id).disabled = true));
+    $('maintResult').hidden = true;
+    if (kind === 'rebuild') await window.safex.nodeAction('rebuild');
+    else await window.safex.maintRun(kind);
+    await loadMaint();
+  }
+  $('mHealth').onclick = () => runMaint('health');
+  $('mBackup').onclick = () => runMaint('backup');
+  $('mRestore').onclick = () => runMaint('restore');
+  $('mRebuild').onclick = () => runMaint('rebuild');
+  window.safex.onMaintResult((r) => {
+    const el = $('maintResult'); let text = '', cls = '';
+    if (r.cancelled) { el.hidden = true; return; }
+    if (!r.ok) { text = r.error || 'That did not finish.'; cls = 'bad'; }
+    else if (r.kind === 'health') {
+      if (r.status === 'OK') text = `Chain health: OK. All ${r.blocks.toLocaleString()} blocks are readable.`;
+      else if (r.status === 'DAMAGED') { text = `Chain is damaged: first unreadable block ${Number(r.firstBad).toLocaleString()}, ${r.errors.toLocaleString()} bad record(s). Restore a backup, or let the node resync.`; cls = 'bad'; }
+      else { text = `Health check finished with status ${r.status}. See the output below.`; cls = 'warn'; }
+    }
+    else if (r.kind === 'backup') text = `Backup saved: ${r.name}. Start the node again when you are ready.`;
+    else if (r.kind === 'restore') text = `Chain restored from ${r.from}. Start the node to resume syncing from there.`;
+    el.textContent = text; el.className = 'result ' + cls; el.hidden = false;
+  });
 
   // Decide the one thing the user should do next.
   function nodeNextStep(p) {
@@ -244,7 +311,7 @@
     $('nodeBtn').disabled = true;
     await window.safex.nodeAction(a);
   };
-  window.safex.onNodePanel((p) => { panel = p; renderNodePanel(); });
+  window.safex.onNodePanel((p) => { panel = p; renderNodePanel(); renderMaint(); });
   window.safex.onNodeLog(addNodeLog);
   // keep the node card live when node status arrives
   window.safex.onNode((n) => { node = n; renderNode(); renderNodePanel(); });
@@ -318,5 +385,6 @@
 
   fillForm();
   renderStats();
-  window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
+  window.safex.nodeRefresh().then(applyRefresh);
+  showPlaceholder();
 })();

@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, shell, Menu, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, clipboard, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
 const { Miner } = require('./core/miner');
@@ -7,6 +7,7 @@ const { Settings } = require('./core/settings');
 const { getInfo } = require('./core/node-status');
 const docker = require('./core/docker');
 const rigs = require('./core/rigs');
+const maint = require('./core/maintenance');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -30,6 +31,18 @@ let dockerStatus = { installed: false, engine: 'missing', image: false, containe
 let nodeBusy = null;      // label while a long action (install/build/stop) runs
 let logStream = null;
 
+// Node output is kept in a buffer so the window gets everything the node has
+// printed, even lines that arrived before it finished loading.
+let logSeq = 0;
+const nodeLogBuf = [];
+let lastBeat = 0;
+function nodeLog(text) {
+  const entry = { n: ++logSeq, t: String(text) };
+  nodeLogBuf.push(entry);
+  if (nodeLogBuf.length > 400) nodeLogBuf.shift();
+  send('node:log', entry);
+}
+
 function sendPanel() {
   send('node:panel', { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan() });
 }
@@ -37,7 +50,7 @@ function manageLogs() {
   const want = dockerStatus.container === 'running' || dockerStatus.container === 'restarting';
   if (want && !logStream) {
     logStream = docker.followLogs();
-    logStream.on('line', (l) => send('node:log', l));
+    logStream.on('line', (l) => nodeLog(l));
     logStream.on('exit', () => { logStream = null; });
   } else if (!want && logStream) { logStream.stop(); logStream = null; }
 }
@@ -50,13 +63,13 @@ async function pollDocker() {
 function runStreamed(label, stream) {
   nodeBusy = label; sendPanel();
   return new Promise((resolve) => {
-    stream.on('line', (l) => send('node:log', l));
+    stream.on('line', (l) => nodeLog(l));
     stream.on('exit', (code) => { nodeBusy = null; resolve(code); });
   });
 }
 async function nodeAction(action) {
   if (nodeBusy) return { ok: false, error: 'Busy: ' + nodeBusy };
-  const note = (t) => send('node:log', t);
+  const note = (t) => nodeLog(t);
   try {
     switch (action) {
       case 'install-docker': {
@@ -71,6 +84,12 @@ async function nodeAction(action) {
         note('Starting Docker. A password prompt may appear.');
         const code = await runStreamed('Starting Docker…', docker.startDockerEngineLinux());
         note(code === 0 ? 'Docker is ready.' : 'Could not start Docker (cancelled or failed).');
+        break;
+      }
+      case 'rebuild': {
+        note('Rebuilding the node image (needs internet, about 100 MB). Your chain data is not touched.');
+        const code = await runStreamed('Rebuilding node image…', docker.buildImage());
+        note(code === 0 ? 'Node image rebuilt.' : 'Rebuild failed. See the lines above.');
         break;
       }
       case 'start': {
@@ -142,6 +161,11 @@ function pollNode() {
     lastNode = info;
     syncStreak = info.state === 'synced' ? syncStreak + 1 : 0;
     send('node:status', info);
+    // A quiet, synced node prints almost nothing, so add a status line every 30 s.
+    if (dockerStatus.container === 'running' && info.height && Date.now() - lastBeat > 30000) {
+      lastBeat = Date.now();
+      nodeLog(`[status] block ${info.height.toLocaleString()} · ${info.peers} peers · ${info.state === 'synced' ? 'synced' : info.state === 'syncing' && !info.peers ? 'connecting to peers' : 'syncing ' + info.percent.toFixed(1) + '%'}`);
+    }
     // A start request that was waiting on sync goes through once the node has
     // been synced for a couple of checks in a row (not just one lucky reading).
     if (waitingForSync && info.state === 'synced' && syncStreak >= SYNC_STREAK_NEEDED) startMining();
@@ -244,7 +268,30 @@ app.whenReady().then(() => {
     const s = settings.set(patch); pollNode(); if ('rigs' in patch) pollRigs(); return s;
   });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
-  ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan() }; });
+  ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice() }; });
+  ipcMain.handle('maint:overview', () => maint.overview());
+  ipcMain.handle('maint:run', async (_e, kind) => {
+    if (!['health', 'backup', 'restore'].includes(kind)) return { ok: false, error: 'Unknown action' };
+    if (nodeBusy) return { ok: false, error: 'Busy: ' + nodeBusy };
+    if (kind === 'restore') {
+      const c = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Cancel', 'Replace chain with backup'], defaultId: 0, cancelId: 0,
+        title: 'Restore chain backup', message: 'Replace your current chain data with the newest complete backup?',
+        detail: 'Your current chain data will be overwritten. Your backup stays untouched. The node must be stopped (it is).' });
+      if (c.response !== 1) return { ok: false, cancelled: true };
+    }
+    const labels = { health: 'Checking chain health…', backup: 'Backing up chain…', restore: 'Restoring chain…' };
+    nodeBusy = labels[kind]; sendPanel();
+    nodeLog(`— ${labels[kind].replace('…', '')} —`);
+    let r;
+    try { r = await maint[kind](nodeLog); }
+    catch (e) { r = { ok: false, error: String(e.message || e) }; }
+    finally { nodeBusy = null; }
+    if (!r.ok && r.error) nodeLog('Stopped: ' + r.error);
+    await pollDocker();
+    const out = { kind, ...r };
+    send('maint:result', out);
+    return out;
+  });
   ipcMain.handle('clipboard:write', (_e, text) => { clipboard.writeText(String(text).slice(0, 2_000_000)); return true; });
   ipcMain.handle('miner:start', (_e, patch) => startMining(patch));
   ipcMain.handle('miner:stop', () => {

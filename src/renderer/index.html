@@ -121,6 +121,21 @@
       </div>
       <label class="check"><input id="autostartNode" type="checkbox"> Start node when app opens</label>
     </section>
+    <section class="panel" id="maintCard">
+      <div class="nodehead">
+        <div>
+          <div class="k">Maintenance</div>
+          <div class="hint" id="maintInfo">Checking…</div>
+        </div>
+        <div class="btnrow">
+          <button id="mHealth" class="mini big" disabled>Health check</button>
+          <button id="mBackup" class="mini big" disabled>Back up chain</button>
+          <button id="mRestore" class="mini big" disabled>Restore backup</button>
+          <button id="mRebuild" class="mini big" disabled>Rebuild image</button>
+        </div>
+      </div>
+      <div id="maintResult" class="result" hidden></div>
+    </section>
     <section class="viewport">
       <div class="vp-head">
         <span>Node output</span><span class="spacer"></span>

@@ -40,7 +40,9 @@ let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
   r = await D.startNode(); assert.ok(r.ok);
   assert.strictEqual(calls().filter((c) => c.startsWith('run ')).length, before); assert.ok(calls().some((c) => c === 'start safex-node')); ok('existing container is restarted, never recreated');
 
-  const lg = D.followLogs(); const ll = []; lg.on('line', (l) => ll.push(l)); await new Promise((res) => lg.on('exit', res));
+  const lg = D.followLogs(); const ll = []; lg.on('line', (l) => ll.push(l));
+  await new Promise((res) => { const t = setInterval(() => { if (ll.length >= 2) { clearInterval(t); res(); } }, 50); });
+  lg.stop(); await new Promise((res) => lg.on('exit', res));
   assert.strictEqual(ll.length, 2); ok('log follower streams lines');
 
   // Install script sanity (no root here, so we only check what we would run)
