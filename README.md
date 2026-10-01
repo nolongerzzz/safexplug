@@ -2,6 +2,12 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.0
+
+- **Explorer tab (the last one).** Latest blocks from your own node (public node if yours is off), search by block number or hash, block details with the coinbase, click a transaction for its facts. Blocks paid to your wallet are marked "yours". Light on purpose: it reads from the node live, nothing is indexed or stored.
+- **Smoother Mine page.** Fades in instead of snapping, the node chip glows when it reaches synced, and a thin 3-step bar under the status shows: node synced, miner starting, mining.
+- **Blocks found** now shows your all-time total from the wallet, with "this run" in small text under it.
+
 ## What's new in 2.9.3
 
 - "Remove wallet" is now **Detach wallet** and sits at the right end of the tab bar (shown on the Payments tab once a wallet is attached). It still asks first and only removes this app's view-only copy.

@@ -16,6 +16,7 @@
   let waiting = false, waitSecs = 0;
   let waitText = '';
   let node = { state: 'unknown' };
+  let payCount = null;
   let stats = {};
 
   $('cpuModel').textContent = `${init.cpuModel} · ${init.cores} threads`;
@@ -74,7 +75,10 @@
     const solo = settings.mode === 'solo';
     $('syncBar').hidden = !(solo && node.state === 'syncing');
     const chip = $('nodeChip');
+    const wasSynced = chip.classList.contains('synced');
     chip.className = 'nodechip ' + (node.state || '');
+    if (node.state === 'synced' && !wasSynced && chip.dataset.seen) { chip.classList.add('justsynced'); setTimeout(() => chip.classList.remove('justsynced'), 1800); }
+    if (node.state) chip.dataset.seen = '1';
     const t = $('nodeText');
     if (node.state === 'synced') t.textContent = `Synced · block ${node.height.toLocaleString()} · ${node.peers} peers`;
     else if (node.state === 'syncing' && !node.peers) {
@@ -87,6 +91,18 @@
   }
 
   // ---- status strip -------------------------------------------------------
+  // 3-step entrance: node synced -> miner starting -> mining. Shown only while starting.
+  let railSeen = false, railTimer = null;
+  function renderRail() {
+    const rail = $('rail');
+    if (!waiting && !running) { clearTimeout(railTimer); rail.hidden = true; railSeen = false; return; }
+    const stage = waiting ? (node.state === 'synced' ? 1 : 0) : (stats.connected ? 3 : 2);
+    if (stage === 3 && !railSeen) { rail.hidden = true; return; }  // already mining when the app opened
+    clearTimeout(railTimer); railSeen = stage < 3;
+    rail.hidden = false; rail.className = 'rail s' + stage;
+    if (stage === 3) railTimer = setTimeout(() => { rail.hidden = true; }, 2200);
+  }
+
   function renderState() {
     const go = $('go');
     let light = 'off', text = 'Stopped';
@@ -96,6 +112,8 @@
       else { light = 'wait'; text = 'Connecting…'; }
     }
     $('light').className = 'light ' + light;
+    if ($('statusText').textContent !== text) { const st = $('statusText'); st.classList.remove('swap'); void st.offsetWidth; st.classList.add('swap'); }
+    renderRail();
     $('statusText').textContent = text; $('statusText').title = waiting && waitSecs ? `Mining starts in ${waitSecs}s` : '';
     go.textContent = running || waiting ? 'Stop mining' : 'Start mining';
     go.className = 'go' + (running || waiting ? ' active' : '');
@@ -107,7 +125,9 @@
     $('hashrate').textContent = fmtHs(stats.hashrate);
     $('threads').textContent = stats.threads ?? '—';
     $('shares').textContent = `${stats.accepted || 0} / ${stats.rejected || 0}`;
-    $('blocks').textContent = stats.blocks || 0;
+    const run = stats.blocks || 0;
+    if (payCount != null) { $('blocks').textContent = Math.max(payCount, run); $('blocksSub').textContent = 'this run: ' + run; }
+    else { $('blocks').textContent = run; $('blocksSub').textContent = 'this run'; }
     renderExpected();
     const warn = [];
     if (running && stats.msr === false)
@@ -166,14 +186,94 @@
     if (!r.ok) { err.textContent = r.error; err.hidden = false; }
   };
 
+
+  // ---- light explorer -----------------------------------------------------
+  let exVisible = false, exRows = [], exTip = 0, exMine = [], exBusy = false;
+  const exShort = (h) => h ? h.slice(0, 10) + '…' + h.slice(-8) : '';
+  const exAge = (t) => { const d = Math.max(0, Math.floor(Date.now() / 1000 - t)); return d < 90 ? d + ' s' : d < 5400 ? Math.round(d / 60) + ' min' : d < 172800 ? Math.round(d / 3600) + ' h' : Math.round(d / 86400) + ' d'; };
+  const exKB = (n) => (n / 1024).toFixed(1) + ' KB';
+  function exCell(tr, text, cls) { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; }
+  function exErr(msg) { $('exErr').hidden = !msg; $('exErr').textContent = msg || ''; }
+  function exSource(r) { $('exSrc').textContent = r && r.source ? (r.source === 'local' ? 'Reading from your own node.' : 'Your node is not answering, so this is read from the public Safex node.') : ''; }
+  function exRender() {
+    const body = $('exBody'); body.textContent = '';
+    for (const b of exRows) {
+      const tr = document.createElement('tr'); tr.style.cursor = 'pointer'; tr.title = 'Open block ' + b.height;
+      if (exMine.includes(b.height)) tr.className = 'me';
+      exCell(tr, b.height.toLocaleString(), 'num'); exCell(tr, exAge(b.time) + ' ago'); exCell(tr, exShort(b.hash)).title = b.hash;
+      exCell(tr, String(b.txs), 'num'); exCell(tr, exKB(b.size), 'num'); exCell(tr, fmtSfx(b.reward), 'num');
+      exCell(tr, exMine.includes(b.height) ? 'yours' : '');
+      tr.onclick = () => exOpen(String(b.height));
+      body.appendChild(tr);
+    }
+  }
+  async function exRefresh(reset) {
+    if (exBusy || !exVisible || !$('exDetail').hidden) return;
+    exBusy = true;
+    try {
+      const r = await window.safex.exRecent(20, null);
+      if (!r.ok) { exErr(r.error); return; }
+      exErr(''); exSource(r); exTip = r.tip; exMine = r.mine || [];
+      if (reset || !exRows.length) exRows = r.blocks;
+      else { const low = r.blocks.length ? r.blocks[r.blocks.length - 1].height : 0; exRows = r.blocks.concat(exRows.filter((b) => b.height < low)); }
+      $('exMore').hidden = false; exRender();
+    } finally { exBusy = false; }
+  }
+  $('exMore').onclick = async () => {
+    if (!exRows.length) return;
+    const r = await window.safex.exRecent(20, exRows[exRows.length - 1].height);
+    if (!r.ok) { exErr(r.error); return; }
+    exErr(''); exRows = exRows.concat(r.blocks); exMine = r.mine || exMine; exRender();
+    if (!r.blocks.length) $('exMore').hidden = true;
+  };
+  function fact(body, k, v, copy) {
+    const tr = document.createElement('tr'); exCell(tr, k).className = 'k'; const td = exCell(tr, v); td.style.whiteSpace = 'normal'; td.style.wordBreak = 'break-all';
+    if (copy) { td.style.cursor = 'copy'; td.title = 'Click to copy'; td.onclick = () => window.safex.copyText(copy); }
+    body.appendChild(tr);
+  }
+  async function exOpen(q) {
+    q = String(q || '').trim(); if (!q) return;
+    const r = await window.safex.exBlock(q);
+    if (!r.ok) { exErr(r.error); return; }
+    exErr(''); exSource(r);
+    const h = r.header, mine = (r.mine || []).includes(h.height);
+    $('exList').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false; $('exTxBox').hidden = true;
+    $('exTitle').textContent = 'Block ' + h.height.toLocaleString() + (mine ? ' · paid to your wallet' : '') + (h.orphan ? ' · orphan' : '');
+    const f = $('exFacts'); f.textContent = '';
+    fact(f, 'Hash', h.hash, h.hash); fact(f, 'Previous', h.prev, h.prev);
+    fact(f, 'Time', new Date(h.time * 1000).toLocaleString() + ' (' + exAge(h.time) + ' ago)');
+    fact(f, 'Difficulty', Number(h.difficulty).toLocaleString()); fact(f, 'Reward', fmtSfx(h.reward));
+    fact(f, 'Size', exKB(h.size)); fact(f, 'Confirmations', Number(h.depth).toLocaleString()); fact(f, 'Nonce', String(h.nonce));
+    if (r.coinbase) fact(f, 'Coinbase', r.coinbase.outputs + ' output(s), ' + fmtSfx(r.coinbase.cash) + (r.coinbase.tokens ? ' + ' + r.coinbase.tokens + ' tokens' : ''));
+    const box = $('exTxs'); box.textContent = '';
+    if (!r.txHashes.length) box.textContent = 'No transactions besides the coinbase.';
+    for (const t of r.txHashes) { const a = document.createElement('button'); a.className = 'mini txbtn'; a.textContent = t; a.onclick = () => exTx(t); box.appendChild(a); }
+  }
+  async function exTx(hash) {
+    const r = await window.safex.exTx(hash);
+    if (!r.ok) { exErr(r.error); return; }
+    exErr(''); $('exTxBox').hidden = false;
+    const f = $('exTxFacts'); f.textContent = '';
+    fact(f, 'Hash', r.hash, r.hash); fact(f, 'Status', r.inPool ? 'Waiting in the pool' : 'In block ' + Number(r.height).toLocaleString());
+    fact(f, 'Inputs / outputs', r.inputs + ' in, ' + r.outputs + ' out'); fact(f, 'Ring size', String(r.ringSize));
+    fact(f, 'Fee', fmtSfx(r.fee)); fact(f, 'Size', exKB(r.size));
+    if (r.tokenOutputs) fact(f, 'Token outputs', String(r.tokenOutputs));
+  }
+  function exBackToList() { $('exDetail').hidden = true; $('exList').hidden = false; $('exLatest').hidden = true; exErr(''); exRefresh(false); }
+  $('exGo').onclick = () => exOpen($('exQ').value);
+  $('exQ').onkeydown = (e) => { if (e.key === 'Enter') exOpen($('exQ').value); };
+  $('exBack').onclick = exBackToList; $('exLatest').onclick = () => { $('exQ').value = ''; exBackToList(); };
+  setInterval(() => exRefresh(false), 10000);
+
   // ---- tabs ---------------------------------------------------------------
   function showTab(name) {
-    for (const t of ['mine', 'node', 'rigs', 'pay']) {
+    for (const t of ['mine', 'node', 'rigs', 'pay', 'explorer']) {
       $(t + 'View').hidden = t !== name;
       $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
+    exVisible = name === 'explorer'; if (exVisible) exRefresh(true);
     $('wsRemove').hidden = name !== 'pay' || !(ws && ws.wallet);
     if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
@@ -181,6 +281,7 @@
   $('tabBtnNode').onclick = () => showTab('node');
   $('tabBtnRigs').onclick = () => showTab('rigs');
   $('tabBtnPay').onclick = () => showTab('pay');
+  $('tabBtnExplorer').onclick = () => showTab('explorer');
 
   // ---- node panel ---------------------------------------------------------
   let panel = null;
@@ -433,7 +534,6 @@
 
   // ---- payments -----------------------------------------------------------
   function setPayBubble(on) { $('bubPay').hidden = !on; $('tabBtnPay').classList.toggle('glow', on); }
-  let payCount = null;
   const fmtSfx = (v) => (v >= 100 ? v.toFixed(2) : v.toFixed(4)).replace(/\.?0+$/, '') + ' SFX';
   const fmtWhen = (t) => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   let payNote = '';
@@ -449,7 +549,7 @@
     $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
     $('pSince').textContent = p.managed ? (p.scanFrom ? `since block ${p.scanFrom.toLocaleString()}` : 'all your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'since you started mining';
     if (ok) {
-      payCount = p.count;
+      payCount = p.count; renderStats();
       if (settings.walletSeen < 0) settings = { ...settings, walletSeen: p.count }, window.safex.setSettings({ walletSeen: p.count });   // first connect: nothing is "new" yet
       else if (p.count > settings.walletSeen) { if ($('payView').hidden) setPayBubble(true); else { settings.walletSeen = p.count; window.safex.setSettings({ walletSeen: p.count }); } }
     }

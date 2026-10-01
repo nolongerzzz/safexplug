@@ -119,3 +119,27 @@ input[readonly]{opacity:.85}
 #wsPanel.done{display:none}
 .tabs .detach{margin-left:auto;align-self:center}
 .tabs button.detach{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500;margin-bottom:4px}
+
+.rigtable.kv td.k{color:var(--mute);width:150px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.txlist{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow:auto}
+.txbtn{text-align:left;font-family:ui-monospace,monospace;font-size:11px;word-break:break-all}
+#exList .mini.big{align-self:center}
+#exBody tr:hover td{background:#18304a}
+
+/* smooth entrance */
+@keyframes appin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes tilein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes chipglow{0%{box-shadow:0 0 0 0 #2ecc7100}35%{box-shadow:0 0 0 4px #2ecc7166,0 0 18px #2ecc71aa}100%{box-shadow:0 0 0 0 #2ecc7100}}
+@keyframes textin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.app{animation:appin .55s ease-out both}
+#mineView .strip .tile{animation:tilein .5s ease-out both}
+#mineView .strip .tile:nth-child(1){animation-delay:.12s}#mineView .strip .tile:nth-child(2){animation-delay:.18s}
+#mineView .strip .tile:nth-child(3){animation-delay:.24s}#mineView .strip .tile:nth-child(4){animation-delay:.30s}
+#mineView .strip .tile:nth-child(5){animation-delay:.36s}#mineView .strip .tile:nth-child(6){animation-delay:.42s}
+.light,.dot,.nodechip,.go{transition:background .6s ease,box-shadow .6s ease,border-color .6s ease,color .6s ease}
+.nodechip.justsynced{animation:chipglow 1.6s ease-out 1;border-color:var(--ok)}
+#statusText.swap{animation:textin .45s ease-out}
+.rail{height:3px;border-radius:2px;background:#1b3249;margin:-4px 0 10px;overflow:hidden}
+.rail i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--warn),var(--ok));transition:width .9s ease-in-out}
+.rail.s0 i{width:8%}.rail.s1 i{width:36%}.rail.s2 i{width:70%}.rail.s3 i{width:100%}
+@media (prefers-reduced-motion:reduce){.app,#mineView .strip .tile,.nodechip.justsynced,#statusText.swap{animation:none}}

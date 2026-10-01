@@ -25,6 +25,7 @@
     <button id="tabBtnNode" role="tab">Node</button>
     <button id="tabBtnRigs" role="tab">Rigs<span class="bubble red" id="bubRigs" hidden></span></button>
     <button id="tabBtnPay" role="tab">Payments<span class="bubble green" id="bubPay" hidden></span></button>
+    <button id="tabBtnExplorer" role="tab">Explorer</button>
     <button id="wsRemove" class="mini detach" title="Detach the view-only wallet from this app (your real wallet is not touched)" hidden>Detach wallet</button>
   </nav>
 
@@ -34,9 +35,10 @@
     <div class="tile"><div class="k">Hashrate</div><div class="v big" id="hashrate">—</div></div>
     <div class="tile"><div class="k">Threads</div><div class="v" id="threads">—</div></div>
     <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="shares">0 / 0</div></div>
-    <div class="tile" title="Blocks found (this run) since mining last started. Your full history is on the Payments tab."><div class="k">Blocks found</div><div class="v" id="blocks">0</div></div>
+    <div class="tile" title="All-time blocks paid to your address (from your wallet). Small text shows blocks found by this machine since mining last started."><div class="k">Blocks found</div><div class="v" id="blocks">0</div><div class="sub" id="blocksSub"></div></div>
     <div class="tile" id="expTile" title="Average time for this machine to find a block solo, from your hashrate and the network difficulty."><div class="k">Expected block</div><div class="v" id="expTime">—</div><div class="sub" id="expSub"></div></div>
   </section>
+  <div id="rail" class="rail s0" hidden aria-hidden="true"><i></i></div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -215,6 +217,28 @@
       <div id="pState" class="hint"></div>
       <div class="hint">Only your wallet's incoming payments are read. This app never asks for or stores your seed or keys.</div>
       <table class="rigtable"><thead><tr><th>When</th><th>Block</th><th>Amount</th><th>Type</th><th>Confirmations</th></tr></thead><tbody id="pBody"></tbody></table>
+    </section>
+  </div>
+  <div id="explorerView" class="view" hidden>
+    <section class="panel">
+      <div class="row">
+        <label class="grow">Find a block<input id="exQ" type="text" spellcheck="false" placeholder="Block number or 64-character block hash"></label>
+        <button id="exGo" class="mini big">Search</button>
+        <button id="exLatest" class="mini big" hidden>Back to latest</button>
+      </div>
+      <div class="hint" id="exSrc"></div>
+      <div class="err" id="exErr" hidden></div>
+    </section>
+    <section class="panel" id="exList">
+      <table class="rigtable"><thead><tr><th>Height</th><th>Age</th><th>Hash</th><th>Txs</th><th>Size</th><th>Reward</th><th></th></tr></thead><tbody id="exBody"></tbody></table>
+      <button id="exMore" class="mini big">Load older blocks</button>
+    </section>
+    <section class="panel" id="exDetail" hidden>
+      <div class="row"><b id="exTitle"></b><span class="spacer"></span><button id="exBack" class="mini">Back to list</button></div>
+      <table class="rigtable kv"><tbody id="exFacts"></tbody></table>
+      <div class="k">Transactions in this block</div>
+      <div id="exTxs" class="txlist"></div>
+      <div id="exTxBox" hidden><div class="k">Transaction</div><table class="rigtable kv"><tbody id="exTxFacts"></tbody></table></div>
     </section>
   </div>
   <footer id="foot"></footer>
