@@ -198,12 +198,14 @@
       <div class="hint" id="wsState"></div>
       <pre id="wsLog" class="smalllog" hidden></pre>
     </section>
-    <section class="panel" id="manualWallet">
-      <div class="hint"><b>Advanced:</b> only needed if you run the wallet tool yourself. This is the <b>wallet tool's</b> address (normally 127.0.0.1:18082), <b>not</b> your node's (17402).</div>
+    <section class="panel" id="manualWallet" hidden>
+      <div class="hint">This system has no one-click wallet setup. Run the official <code>safex-wallet-rpc</code> yourself and enter its address (normally 127.0.0.1:18082; your node's 17402 is not it).</div>
       <div class="row">
         <label class="grow">Wallet tool address<input id="pAddr" type="text" spellcheck="false" placeholder="127.0.0.1:18082"></label>
         <button id="pSave" class="mini big">Connect</button>
       </div>
+    </section>
+    <section class="panel" id="payList">
       <div id="pState" class="hint"></div>
       <div class="hint">Only your wallet's incoming payments are read. This app never asks for or stores your seed or keys.</div>
       <table class="rigtable"><thead><tr><th>When</th><th>Block</th><th>Amount</th><th>Type</th><th>Confirmations</th></tr></thead><tbody id="pBody"></tbody></table>
