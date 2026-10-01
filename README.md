@@ -2,6 +2,11 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.5
+
+- **Mac builds now use xmrig 6.26.0** (Intel and Apple Silicon), the same version as Linux, so solo mining works on a Mac. Before, the Mac copy was 6.16.2, which the Safex node rejects.
+- **Running on a Mac without building an installer:** install Node.js, unpack the source, then `cd` into it, run `npm install` and `npm start`. If macOS blocks the miner as "unidentified developer", run `xattr -dr com.apple.quarantine .` in that folder once. Node tab (Docker) and the one-click wallet are Linux-only; on a Mac use "Pool" or "My node" pointed at a node you can reach.
+
 ## What's new in 3.0.4
 
 - The green progress bar no longer "skips out": when mining is up it fades and the page eases up into the space instead of jumping about 20 px in one frame. The bar also changes colour step by step (amber to green) instead of stretching a gradient.
