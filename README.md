@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.7.2
+
+- Payments list shows the block height of each payment so you can check it against a block explorer or your other wallet.
+
 ## What's new in 2.7.1
 
 - **Blocks found now counts in solo mode.** xmrig never prints a "BLOCK FOUND" line (the old counter waited for text that never comes), so it stayed at 0. In solo mode the node only accepts results that meet network difficulty, so each new accepted result at that difficulty is a block. Donation-period shares are ignored. The tile counts since mining last started; your full history is the Payments tab.

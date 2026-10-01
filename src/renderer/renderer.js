@@ -445,7 +445,7 @@
     const body = $('pBody'); body.textContent = '';
     for (const r of ok ? p.recent : []) {
       const tr = document.createElement('tr');
-      cell(tr, fmtWhen(r.time)); cell(tr, fmtSfx(r.sfx), 'num'); cell(tr, r.type === 'block' ? 'Mined' : 'Received'); cell(tr, String(r.confirmations), 'num');
+      cell(tr, fmtWhen(r.time)); cell(tr, r.height ? String(r.height) : '—', 'num'); cell(tr, fmtSfx(r.sfx), 'num'); cell(tr, r.type === 'block' ? 'Mined' : 'Received'); cell(tr, String(r.confirmations), 'num');
       body.appendChild(tr);
     }
   }

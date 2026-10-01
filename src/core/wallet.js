@@ -44,7 +44,7 @@ function tally(transfers, since = 0) {
     const amt = Number(x.amount) || 0;
     t.count++; t.atomic += amt; t.tokenAtomic += Number(x.token_amount) || 0;
     if (x.type === 'block') { t.mined++; t.minedAtomic += amt; }
-    t.recent.push({ time: Number(x.timestamp), sfx: amt / ATOMIC, type: x.type, confirmations: Number(x.confirmations) || 0, txid: x.txid || '' });
+    t.recent.push({ time: Number(x.timestamp), sfx: amt / ATOMIC, type: x.type, confirmations: Number(x.confirmations) || 0, txid: x.txid || '', height: Number(x.height) || null });
   }
   t.recent.sort((a, b) => b.time - a.time);
   t.latest = t.recent.length ? t.recent[0].time : null;
