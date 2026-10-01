@@ -32,6 +32,10 @@ function buildArgs(s) {
     '--print-time', '5',
     '--no-color',
   ];
+  // Optional read-only stats API so other rigs / this app can see this miner.
+  if (s.shareStats && s.apiToken) {
+    args.push('--http-host', '0.0.0.0', '--http-port', String(s.apiPort || 18080), '--http-access-token', s.apiToken);
+  }
   if (s.mode === 'solo') {
     args.push('--daemon', '-o', s.node || '127.0.0.1:17402');
   } else {
@@ -79,7 +83,8 @@ class Miner extends EventEmitter {
     this.stats = this._fresh();
     this._emitStats();
     const args = buildArgs({ ...settings, address: settings.address.trim() });
-    this.emit('log', '$ xmrig ' + args.map((a) => (a.startsWith('Safex') ? a.slice(0, 10) + '…' : a)).join(' '));
+    const shown = args.map((a, i) => (a.startsWith('Safex') ? a.slice(0, 10) + '…' : (args[i - 1] === '--http-access-token' ? '••••' : a)));
+    this.emit('log', '$ xmrig ' + shown.join(' '));
 
     let proc;
     try { proc = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] }); }

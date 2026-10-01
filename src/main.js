@@ -6,6 +6,8 @@ const { Miner } = require('./core/miner');
 const { Settings } = require('./core/settings');
 const { getInfo } = require('./core/node-status');
 const docker = require('./core/docker');
+const rigs = require('./core/rigs');
+const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
@@ -15,6 +17,13 @@ let win = null;
 let nodePoll = null;
 let lastNode = { state: 'unknown' };
 let waitingForSync = false;
+let syncStreak = 0;       // consecutive polls the node has been synced
+let autoTimer = null;     // countdown before auto-starting the miner
+const SYNC_STREAK_NEEDED = 2;
+const PUBLIC_NODE = 'rpc.safex.org:17402';
+let lastPublic = { at: 0, info: null };
+let rigRows = [];
+let rigsBusy = false;
 
 // ---- node panel state ----
 let dockerStatus = { installed: false, engine: 'missing', image: false, container: 'none' };
@@ -97,9 +106,27 @@ function send(ch, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(ch, payload);
 }
 
+function cancelAutostart() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; send('miner:waiting', { waiting: false }); }
+}
+
+// Wait a few seconds after the app opens, so the node has time to settle.
+function beginAutostart() {
+  let n = Math.round(settings.get().startDelay);
+  if (n <= 0) { startMining(); return; }
+  const tick = () => send('miner:waiting', { waiting: true, text: `Starting in ${n}s…` });
+  tick();
+  autoTimer = setInterval(() => {
+    n -= 1;
+    if (n <= 0) { clearInterval(autoTimer); autoTimer = null; send('miner:waiting', { waiting: false }); startMining(); }
+    else tick();
+  }, 1000);
+}
+
 function startMining(patch) {
+  cancelAutostart();
   const s = patch ? settings.set(patch) : settings.get();
-  if (s.mode === 'solo' && s.requireSynced && lastNode.state !== 'synced') {
+  if (s.mode === 'solo' && s.requireSynced && (lastNode.state !== 'synced' || syncStreak < SYNC_STREAK_NEEDED)) {
     waitingForSync = true;
     send('miner:waiting', { waiting: true });
     return { ok: true, waiting: true };
@@ -111,12 +138,37 @@ function startMining(patch) {
 
 function pollNode() {
   const s = settings.get();
-  getInfo(s.mode === 'solo' ? s.node : '127.0.0.1:17402').then((info) => {
+  return getInfo(s.mode === 'solo' ? s.node : '127.0.0.1:17402').then((info) => {
     lastNode = info;
+    syncStreak = info.state === 'synced' ? syncStreak + 1 : 0;
     send('node:status', info);
-    // A start request that was waiting on sync goes through as soon as we are synced.
-    if (waitingForSync && info.state === 'synced') startMining();
+    // A start request that was waiting on sync goes through once the node has
+    // been synced for a couple of checks in a row (not just one lucky reading).
+    if (waitingForSync && info.state === 'synced' && syncStreak >= SYNC_STREAK_NEEDED) startMining();
   });
+}
+
+// Network hashrate = difficulty / block time, from our node if it gives it,
+// otherwise (optionally) from the public node, asked at most every 30 s.
+async function pollNetwork() {
+  const s = settings.get();
+  let info = lastNode; let source = 'local';
+  if (!(info && info.netHashrate)) {
+    if (!s.publicFallback) { send('net:hashrate', { hs: null }); return; }
+    if (Date.now() - lastPublic.at > 30000) lastPublic = { at: Date.now(), info: await getInfo(PUBLIC_NODE) };
+    info = lastPublic.info; source = 'public';
+  }
+  send('net:hashrate', { hs: (info && info.netHashrate) || null, height: (info && info.height) || null, source });
+}
+
+async function pollRigs() {
+  if (rigsBusy) return;
+  rigsBusy = true;
+  try {
+    const s = settings.get();
+    rigRows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
+    send('rigs:status', rigRows);
+  } finally { rigsBusy = false; }
 }
 
 function createWindow() {
@@ -172,7 +224,12 @@ app.whenReady().then(() => {
   miner.on('state', (st) => send('miner:state', st));
   miner.on('exit', (e) => { send('miner:state', { running: false, exit: e }); });
 
+  const lanAddress = () => {
+    const all = [].concat(...Object.values(os.networkInterfaces())).filter((i) => i.family === 'IPv4' && !i.internal).map((i) => i.address);
+    return all.find((a) => a.startsWith('100.')) || all[0] || null;   // Tailscale first
+  };
   ipcMain.handle('app:init', () => ({
+    lanAddress: lanAddress(),
     settings: settings.get(),
     running: miner.running,
     cpuModel: (os.cpus()[0] || {}).model || 'Unknown CPU',
@@ -180,18 +237,24 @@ app.whenReady().then(() => {
     platform: process.platform,
     version: app.getVersion(),
   }));
-  ipcMain.handle('settings:set', (_e, patch) => { const s = settings.set(patch || {}); pollNode(); return s; });
+  ipcMain.handle('settings:set', (_e, patch) => {
+    patch = patch || {};
+    // Switching on stats sharing creates the access token the first time.
+    if (patch.shareStats && !settings.get().apiToken && !patch.apiToken) patch.apiToken = crypto.randomBytes(16).toString('hex');
+    const s = settings.set(patch); pollNode(); if ('rigs' in patch) pollRigs(); return s;
+  });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
   ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan() }; });
   ipcMain.handle('clipboard:write', (_e, text) => { clipboard.writeText(String(text).slice(0, 2_000_000)); return true; });
   ipcMain.handle('miner:start', (_e, patch) => startMining(patch));
   ipcMain.handle('miner:stop', () => {
-    waitingForSync = false; send('miner:waiting', { waiting: false }); miner.stop(); return { ok: true };
+    cancelAutostart(); waitingForSync = false; send('miner:waiting', { waiting: false }); miner.stop(); return { ok: true };
   });
 
   createWindow();
-  nodePoll = setInterval(() => { pollNode(); pollDocker(); }, 5000);
-  pollNode();
+  nodePoll = setInterval(() => { pollNode().then(pollNetwork); pollDocker(); pollRigs(); }, 5000);
+  pollNode().then(pollNetwork);
+  pollRigs();
   pollDocker().then(() => {
     if (settings.get().autostartNode && dockerStatus.engine === 'ok' && dockerStatus.container !== 'running') nodeAction('start');
   });
@@ -199,12 +262,12 @@ app.whenReady().then(() => {
   // Auto-start once the window is ready (after the UI has its initial state).
   win.webContents.once('did-finish-load', () => {
     const s = settings.get();
-    if (s.autostart && s.address) setTimeout(() => startMining(), 800);
+    if (s.autostart && s.address) beginAutostart();
   });
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-app.on('before-quit', () => { clearInterval(nodePoll); miner.stop(); if (logStream) logStream.stop(); });
+app.on('before-quit', () => { clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

@@ -10,13 +10,20 @@
 <body>
 <div class="app">
   <header>
-    <img src="../public/images/logo.png" alt="Safex" class="logo">
+    <div class="brand">
+      <img src="../public/images/logo.png" alt="Safex" class="logo">
+      <div class="net" id="netChip" title="Estimated from network difficulty" hidden>
+        <div class="k">Network hashrate</div>
+        <div class="v" id="netHs">—</div>
+      </div>
+    </div>
     <div class="cpu"><span id="cpuModel">—</span></div>
   </header>
 
   <nav class="tabs" role="tablist">
     <button id="tabBtnMine" role="tab" class="sel">Mine</button>
     <button id="tabBtnNode" role="tab">Node</button>
+    <button id="tabBtnRigs" role="tab">Rigs</button>
   </nav>
 
   <div id="mineView" class="view">
@@ -122,6 +129,37 @@
         <button id="nClear" class="mini">Clear</button>
       </div>
       <pre id="nLog" aria-live="off"></pre>
+    </section>
+  </div>
+  <div id="rigsView" class="view" hidden>
+    <section class="strip rigstrip">
+      <div class="tile"><div class="k">Combined hashrate</div><div class="v big" id="cHs">—</div></div>
+      <div class="tile"><div class="k">Rigs mining</div><div class="v" id="cOnline">0</div></div>
+      <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="cShares">0 / 0</div></div>
+    </section>
+    <section class="panel">
+      <table class="rigtable" id="rigTable">
+        <thead><tr><th>Miner</th><th>Status</th><th>Hashrate</th><th>Threads</th><th>Shares</th><th>Uptime</th><th></th></tr></thead>
+        <tbody id="rigBody"></tbody>
+      </table>
+      <div class="row">
+        <label class="grow">Name<input id="rName" type="text" placeholder="Garage rig"></label>
+        <label class="grow">Address<input id="rHost" type="text" spellcheck="false" placeholder="100.101.102.103:18080"></label>
+        <label class="grow">Access token<input id="rToken" type="text" spellcheck="false" placeholder="from that miner"></label>
+        <button id="rAdd" class="mini big">Add miner</button>
+      </div>
+      <div id="rErr" class="error" hidden></div>
+    </section>
+    <section class="panel">
+      <label class="check"><input id="shareStats" type="checkbox"> Share this miner's stats so other rigs can add it (read-only, needs the token)</label>
+      <div id="shareInfo" class="shareinfo" hidden>
+        <div class="hint">On the other machine, add a miner with this address and token. Use the Tailscale address (starts with 100.) so it works from anywhere without opening your router. Takes effect the next time mining starts.</div>
+        <div class="row">
+          <label class="grow">Address<input id="myAddr" type="text" readonly></label>
+          <label class="grow">Access token<input id="myToken" type="text" readonly></label>
+          <button id="copyShare" class="mini big">Copy both</button>
+        </div>
+      </div>
     </section>
   </div>
   <footer id="foot"></footer>

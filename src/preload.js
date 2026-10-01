@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('safex', {
   nodeRefresh: () => ipcRenderer.invoke('node:refresh'),
   onNodePanel: on('node:panel'),
   onNodeLog: on('node:log'),
+  onNet: on('net:hashrate'),
+  onRigs: on('rigs:status'),
   copyText: (t) => ipcRenderer.invoke('clipboard:write', t),
   onLog: on('miner:log'),
   onStats: on('miner:stats'),

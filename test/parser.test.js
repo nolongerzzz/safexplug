@@ -73,13 +73,18 @@ t('formatHs', () => {
   assert.strictEqual(formatHs(713.74), '713.7 H/s');
 });
 t('node classify: synced at target-1 / target', () => {
-  assert.strictEqual(classify({ height: 2097365, target_height: 2097364 }).state, 'synced');
-  assert.strictEqual(classify({ height: 2097364, target_height: 2097365 }).state, 'synced');
+  assert.strictEqual(classify({ height: 2097365, target_height: 2097364, outgoing_connections_count: 8 }).state, 'synced');
+  assert.strictEqual(classify({ height: 2097364, target_height: 2097365, outgoing_connections_count: 8 }).state, 'synced');
 });
 t('node classify: syncing and target 0', () => {
-  const s = classify({ height: 1000, target_height: 2000 });
+  const s = classify({ height: 1000, target_height: 2000, outgoing_connections_count: 5 });
   assert.strictEqual(s.state, 'syncing'); assert.strictEqual(s.percent, 50);
-  assert.strictEqual(classify({ height: 5, target_height: 0 }).state, 'synced');
-  assert.strictEqual(classify({ height: 0, target_height: 0 }).state, 'syncing');
+  assert.strictEqual(classify({ height: 5, target_height: 0, outgoing_connections_count: 3 }).state, 'synced');
+  assert.strictEqual(classify({ height: 0, target_height: 0, outgoing_connections_count: 3 }).state, 'syncing');
+  // regression: a freshly restarted node reports target 0 and no peers; that is NOT synced
+  assert.strictEqual(classify({ height: 2097300, target_height: 0 }).state, 'syncing');
+  assert.strictEqual(classify({ height: 2097300, target_height: 0, synchronized: false, outgoing_connections_count: 4 }).state, 'syncing');
+  assert.strictEqual(classify({ height: 10, difficulty: 120000000, target: 60, outgoing_connections_count: 1 }).netHashrate, 2000000);
+  assert.strictEqual(classify({ height: 10, difficulty: 120000000, outgoing_connections_count: 1 }).netHashrate, null);
 });
 console.log(`\n${n} tests passed`);

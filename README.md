@@ -1,8 +1,15 @@
-# Safex Community Miner 2.2
+# Safex Community Miner 2.3
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
-## What's new in 2.2
+## What's new in 2.3
+
+- **Network hashrate** next to the logo, estimated from network difficulty (from your node, or the public node if you have none; switch off with `publicFallback` in settings).
+- **Rigs tab**: add other miners by address and access token and see each one's status, hashrate, threads, shares and uptime, plus the **combined hashrate for your wallet**. Rigs mining to a different wallet are flagged and left out of the combined total. Any xmrig miner with its HTTP API enabled works. For this app, tick "Share this miner's stats" to get the address and token to paste on the other machine. Use the Tailscale address so it works from anywhere without opening your router.
+- **10 second start delay** when "Start mining when app opens" is on, with a visible countdown (`startDelay` in settings; Stop cancels it).
+- **Sync detection fixed**: a node that has just restarted reports no network height and no peers, which used to read as "Synced" for a few seconds. A node now only counts as synced when it has peers, is within a block of the network, and has stayed synced for two checks in a row.
+
+## What was new in 2.2
 
 - **Node tab**: run your own `safexd` node from the app, no terminal. One button does the right next step: **Install Docker** (Linux: one password prompt, does the whole install), **Start Docker**, **Fix access**, then **Start node** (first time it builds the node image, then starts it). Shows height, network height, peers and sync %, with a live node log.
 - Adopts an existing `safex-node` container, so a node that is already synced is never rebuilt or resynced.
@@ -41,7 +48,7 @@ npm run dist       # electron-builder (deb/rpm, nsis, dmg)
 
 1. 2.1 standalone miner (done)
 2. Node panel (done, 2.2)
-3. Combined view, auto-start on boot, remote-access status
+3. Combined view and rigs (done, 2.3), remote-access status
 4. Wallet sync
 5. Local explorer
 

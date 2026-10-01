@@ -14,6 +14,7 @@
   let settings = init.settings;
   let running = init.running;
   let waiting = false;
+  let waitText = '';
   let node = { state: 'unknown' };
   let stats = {};
 
@@ -75,7 +76,9 @@
     chip.className = 'nodechip ' + (node.state || '');
     const t = $('nodeText');
     if (node.state === 'synced') t.textContent = `Synced · block ${node.height.toLocaleString()} · ${node.peers} peers`;
-    else if (node.state === 'syncing') {
+    else if (node.state === 'syncing' && !node.peers) {
+      t.textContent = 'Connecting to peers…';
+    } else if (node.state === 'syncing') {
       t.textContent = `Syncing ${node.percent.toFixed(1)}% · ${node.height.toLocaleString()} / ${node.target.toLocaleString()}`;
       $('syncFill').style.width = node.percent + '%';
     } else if (node.state === 'offline') t.textContent = 'Node not reachable';
@@ -86,7 +89,7 @@
   function renderState() {
     const go = $('go');
     let light = 'off', text = 'Stopped';
-    if (waiting) { light = 'wait'; text = 'Waiting for node to sync'; }
+    if (waiting) { light = 'wait'; text = waitText || 'Waiting for node to sync'; }
     else if (running) {
       if (stats.connected) { light = 'on'; text = 'Mining'; }
       else { light = 'wait'; text = 'Connecting…'; }
@@ -148,7 +151,7 @@
     }
     renderStats();
   });
-  window.safex.onWaiting((w) => { waiting = w.waiting; renderState(); });
+  window.safex.onWaiting((w) => { waiting = w.waiting; waitText = w.text || ''; renderState(); });
 
   // ---- start / stop -------------------------------------------------------
   $('go').onclick = async () => {
@@ -163,13 +166,16 @@
 
   // ---- tabs ---------------------------------------------------------------
   function showTab(name) {
-    const node = name === 'node';
-    $('mineView').hidden = node; $('nodeView').hidden = !node;
-    $('tabBtnMine').className = node ? '' : 'sel'; $('tabBtnNode').className = node ? 'sel' : '';
-    if (node) window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
+    for (const t of ['mine', 'node', 'rigs']) {
+      $(t + 'View').hidden = t !== name;
+      $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
+    }
+    if (name === 'node') window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
+    if (name === 'rigs') renderRigs();
   }
   $('tabBtnMine').onclick = () => showTab('mine');
   $('tabBtnNode').onclick = () => showTab('node');
+  $('tabBtnRigs').onclick = () => showTab('rigs');
 
   // ---- node panel ---------------------------------------------------------
   let panel = null;
@@ -242,6 +248,73 @@
   window.safex.onNodeLog(addNodeLog);
   // keep the node card live when node status arrives
   window.safex.onNode((n) => { node = n; renderNode(); renderNodePanel(); });
+
+  // ---- network hashrate ---------------------------------------------------
+  window.safex.onNet((n) => {
+    const chip = $('netChip');
+    if (!n.hs) { chip.hidden = true; return; }
+    chip.hidden = false;
+    $('netHs').textContent = fmtHs(n.hs);
+    chip.title = n.source === 'public'
+      ? 'Estimated from network difficulty, read from the public node (no local node found).'
+      : 'Estimated from network difficulty, read from your node.';
+  });
+
+  // ---- rigs ---------------------------------------------------------------
+  let rigRows = [];
+  const fmtUp = (s) => { if (!s) return '—'; const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
+  const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
+  function pill(td, text, cls) { const sp = document.createElement('span'); sp.className = 'pill ' + cls; sp.textContent = text; td.appendChild(sp); }
+
+  function renderRigs() {
+    const body = $('rigBody'); body.textContent = '';
+    // this machine
+    const me = document.createElement('tr'); me.className = 'me';
+    cell(me, 'This machine'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
+    cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); cell(me, stats.threads ?? '—', 'num');
+    cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
+    body.appendChild(me);
+    let hs = running ? (stats.hashrate || 0) : 0, acc = running ? (stats.accepted || 0) : 0, rej = running ? (stats.rejected || 0) : 0, online = running && stats.connected ? 1 : 0;
+    rigRows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      cell(tr, r.name);
+      const td = cell(tr, '');
+      if (!r.online) pill(td, r.reason === 'auth' ? 'wrong token' : 'offline', 'off');
+      else if (r.otherWallet) pill(td, 'other wallet', 'warn');
+      else pill(td, 'mining', 'on');
+      cell(tr, r.online ? fmtHs(r.hashrate) : '—', 'num'); cell(tr, r.online ? (r.threads ?? '—') : '—', 'num');
+      cell(tr, r.online ? `${r.accepted} / ${r.rejected}` : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
+      const x = cell(tr, ''); const b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Remove';
+      b.onclick = async () => { settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
+      x.appendChild(b); body.appendChild(tr);
+      if (r.online && !r.otherWallet) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
+    });
+    $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = `${acc} / ${rej}`;
+    $('shareStats').checked = settings.shareStats;
+    $('shareInfo').hidden = !settings.shareStats;
+    if (settings.shareStats) { $('myAddr').value = `${init.lanAddress || 'this-machine'}:${settings.apiPort}`; $('myToken').value = settings.apiToken; }
+  }
+  window.safex.onRigs((rows) => { rigRows = rows; if (!$('rigsView').hidden) renderRigs(); });
+
+  $('rAdd').onclick = async () => {
+    const err = $('rErr'); err.hidden = true;
+    const m = /^([A-Za-z0-9.\-]+):(\d{2,5})$/.exec($('rHost').value.trim());
+    if (!m) { err.textContent = 'Address should look like 100.101.102.103:18080'; err.hidden = false; return; }
+    const rig = { name: $('rName').value.trim() || m[1], host: m[1], port: parseInt(m[2], 10), token: $('rToken').value.trim() };
+    if (settings.rigs.some((r) => r.host === rig.host && r.port === rig.port)) { err.textContent = 'That miner is already in the list.'; err.hidden = false; return; }
+    settings = await window.safex.setSettings({ rigs: [...settings.rigs, rig] });
+    $('rName').value = ''; $('rHost').value = ''; $('rToken').value = '';
+  };
+  $('shareStats').addEventListener('change', async () => {
+    settings = await window.safex.setSettings({ shareStats: $('shareStats').checked }); renderRigs();
+  });
+  $('copyShare').onclick = async () => {
+    await window.safex.copyText(`${$('myAddr').value}  token: ${$('myToken').value}`);
+    const b = $('copyShare'); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1200);
+  };
+  // re-render the rigs table when our own stats change
+  const _origStats = window.safex.onStats;
+  window.safex.onStats(() => { if (!$('rigsView').hidden) renderRigs(); });
 
   fillForm();
   renderStats();
