@@ -1,6 +1,12 @@
-# Safex Community Miner 2.4
+# Safex Community Miner 2.5
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
+
+## What's new in 2.5
+
+- **Expected block tile** (Mine tab, Solo mode): average time to find a block at your hashrate and the chance within the next hour. Rigs tab has the same for all rigs combined.
+- **Tailscale line on every rig**: online and answering, machine up but miner silent, machine offline (last seen), or not on Tailscale. Read-only; the app never changes Tailscale.
+- Fixed a startup race where the node output and network hashrate could be blank for the first moments.
 
 ## What's new in 2.4
 

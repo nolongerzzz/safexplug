@@ -33,6 +33,7 @@
     <div class="tile"><div class="k">Threads</div><div class="v" id="threads">—</div></div>
     <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="shares">0 / 0</div></div>
     <div class="tile"><div class="k">Blocks found</div><div class="v" id="blocks">0</div></div>
+    <div class="tile" id="expTile" title="Average time for this machine to find a block solo, from your hashrate and the network difficulty."><div class="k">Expected block</div><div class="v" id="expTime">—</div><div class="sub" id="expSub"></div></div>
   </section>
 
   <div id="banner" class="banner" hidden></div>
@@ -151,6 +152,7 @@
       <div class="tile"><div class="k">Combined hashrate</div><div class="v big" id="cHs">—</div></div>
       <div class="tile"><div class="k">Rigs mining</div><div class="v" id="cOnline">0</div></div>
       <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="cShares">0 / 0</div></div>
+      <div class="tile" title="Average time for all your rigs together to find a block solo."><div class="k">Expected block (all)</div><div class="v" id="cExp">—</div><div class="sub" id="cExpSub"></div></div>
     </section>
     <section class="panel">
       <table class="rigtable" id="rigTable">
@@ -179,6 +181,7 @@
   </div>
   <footer id="foot"></footer>
 </div>
+<script src="stats.js"></script>
 <script src="renderer.js"></script>
 </body>
 </html>

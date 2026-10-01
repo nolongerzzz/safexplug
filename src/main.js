@@ -8,6 +8,7 @@ const { getInfo } = require('./core/node-status');
 const docker = require('./core/docker');
 const rigs = require('./core/rigs');
 const maint = require('./core/maintenance');
+const tailscale = require('./core/tailscale');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -25,6 +26,9 @@ const PUBLIC_NODE = 'rpc.safex.org:17402';
 let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
+let tsCache = { at: 0, status: null };
+let lastNet = null;       // latest network reading, handed to the window when it loads
+const sendNet = (n) => { lastNet = n; send('net:hashrate', n); };
 
 // ---- node panel state ----
 let dockerStatus = { installed: false, engine: 'missing', image: false, container: 'none' };
@@ -178,11 +182,11 @@ async function pollNetwork() {
   const s = settings.get();
   let info = lastNode; let source = 'local';
   if (!(info && info.netHashrate)) {
-    if (!s.publicFallback) { send('net:hashrate', { hs: null }); return; }
+    if (!s.publicFallback) { sendNet({ hs: null }); return; }
     if (Date.now() - lastPublic.at > 30000) lastPublic = { at: Date.now(), info: await getInfo(PUBLIC_NODE) };
     info = lastPublic.info; source = 'public';
   }
-  send('net:hashrate', { hs: (info && info.netHashrate) || null, height: (info && info.height) || null, source });
+  sendNet({ hs: (info && info.netHashrate) || null, difficulty: (info && info.difficulty) || null, height: (info && info.height) || null, source });
 }
 
 async function pollRigs() {
@@ -190,8 +194,11 @@ async function pollRigs() {
   rigsBusy = true;
   try {
     const s = settings.get();
-    rigRows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
-    send('rigs:status', rigRows);
+    // Tailscale status is cheap but not free: refresh at most every 15 s.
+    if (Date.now() - tsCache.at > 15000) tsCache = { at: Date.now(), status: await tailscale.status() };
+    const rows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
+    rigRows = rows.map((r) => ({ ...r, ts: tailscale.describe(tsCache.status, r) }));
+    send('rigs:status', { rows: rigRows, self: tailscale.describeSelf(tsCache.status) });
   } finally { rigsBusy = false; }
 }
 
@@ -253,6 +260,7 @@ app.whenReady().then(() => {
     return all.find((a) => a.startsWith('100.')) || all[0] || null;   // Tailscale first
   };
   ipcMain.handle('app:init', () => ({
+    net: lastNet,
     lanAddress: lanAddress(),
     settings: settings.get(),
     running: miner.running,

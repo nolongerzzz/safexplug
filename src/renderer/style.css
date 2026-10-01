@@ -5,7 +5,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--
 header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .logo{height:34px}
 .cpu{color:var(--mute);font-size:12px;text-align:right}
-.strip{display:grid;grid-template-columns:1.2fr 1.4fr .8fr 1.3fr 1fr;gap:8px}
+.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0;display:flex;align-items:center;gap:10px}
 .tile:not(.status){flex-direction:column;align-items:flex-start;justify-content:center;gap:0}
 .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
@@ -42,7 +42,7 @@ input:disabled,select:disabled{opacity:.55}
 #log .l-warn,#nLog .l-warn{color:var(--warn)}#log .l-err,#nLog .l-err{color:var(--bad)}#log .l-hr{color:var(--accent)}#log .l-ok,#nLog .l-ok{color:var(--ok)}#log .l-cmd{color:var(--mute)}
 footer{color:var(--mute);font-size:11px;text-align:center}
 [hidden]{display:none!important}
-@media(max-width:720px){.strip{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.strip{grid-auto-flow:row;grid-template-columns:1fr 1fr}}
 
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
 .tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mute);padding:8px 18px;font:inherit;font-weight:600;cursor:pointer}
@@ -60,7 +60,7 @@ footer{color:var(--mute);font-size:11px;text-align:center}
 .net{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:4px 12px;line-height:1.15}
 .net .v{font-size:15px;color:var(--accent)}
 .net .src{color:var(--mute);font-size:10px}
-.rigstrip{grid-template-columns:1.6fr 1fr 1.3fr}
+.rigstrip{grid-auto-flow:column}
 .rigtable{width:100%;border-collapse:collapse;font-size:13px}
 .rigtable th{text-align:left;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-bottom:1px solid var(--line)}
 .rigtable td{padding:8px;border-bottom:1px solid #1b3249;white-space:nowrap}
@@ -81,3 +81,8 @@ input[readonly]{opacity:.85}
 #nLog .placeholder{color:var(--mute);font-style:italic}
 #nLog .l-app{color:var(--accent)}
 .mini:disabled{opacity:.45;cursor:default}
+
+.sub{font-size:11px;color:var(--mute);margin-top:1px;white-space:nowrap}
+.tile .v{font-size:16px}.tile .v.big{font-size:19px}
+.rigtable .tsline{font-size:11px;margin-top:2px;white-space:normal;max-width:300px;line-height:1.25}
+.ts-ok{color:var(--ok)}.ts-warn{color:var(--warn)}.ts-bad{color:var(--bad)}.ts-dim{color:var(--mute)}
