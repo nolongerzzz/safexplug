@@ -174,6 +174,7 @@
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
+    $('wsRemove').hidden = name !== 'pay' || !(ws && ws.wallet);
     if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
   $('tabBtnMine').onclick = () => showTab('mine');
@@ -502,7 +503,7 @@
     if (!ws) return;
     const st = $('wsState');
     $('manualWallet').hidden = ws.supported;
-    $('wsRemove').hidden = !ws.wallet; $('wsPanel').classList.toggle('done', !!ws.wallet); if (ws.wallet) wsLog.hidden = true;
+    $('wsRemove').hidden = !ws.wallet || $('payView').hidden; $('wsPanel').classList.toggle('done', !!ws.wallet); if (ws.wallet) wsLog.hidden = true;
     $('wsDl').disabled = ws.busy || ws.tools || !ws.supported;
     $('wsDl').textContent = ws.tools ? '1. Wallet tools ready ✓' : ws.busy ? 'Downloading…' : '1. Download wallet tools';
     $('wsAdd').disabled = !ws.tools || ws.wallet || !ws.terminal;

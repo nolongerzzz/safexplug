@@ -369,8 +369,8 @@ app.whenReady().then(() => {
     return r;
   });
   ipcMain.handle('wsetup:remove', async () => {
-    const c = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Cancel', 'Remove view-only wallet'], defaultId: 0, cancelId: 0,
-      title: 'Remove wallet', message: 'Remove the view-only wallet from this app?', detail: 'This deletes only the view-only copy kept by this app. Your real wallet is not touched.' });
+    const c = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Cancel', 'Detach wallet'], defaultId: 0, cancelId: 0,
+      title: 'Detach wallet', message: 'Detach the view-only wallet from this app?', detail: 'This deletes only the view-only copy kept by this app. Your real wallet, seed and keys are not touched. To attach again you will paste your address and view key once more.' });
     if (c.response !== 1) return { ok: false, cancelled: true };
     walletRpc.stop(); await new Promise((r) => setTimeout(r, 500)); wsetup.removeWallet(walletDir());
     settings.set({ walletRpc: '' }); payAt = 0; pollWallet(); return { ok: true };

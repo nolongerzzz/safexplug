@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.9.3
+
+- "Remove wallet" is now **Detach wallet** and sits at the right end of the tab bar (shown on the Payments tab once a wallet is attached). It still asks first and only removes this app's view-only copy.
+
 ## What's new in 2.9.2
 
 - Payments: the setup box disappears once your wallet is added (a small "Remove wallet" button sits under the payments list).
