@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.1
+
+- The yellow warning banner (huge pages / MSR) now slides in smoothly instead of pushing the page down in one jump.
+
 ## What's new in 3.0.0
 
 - **Explorer tab (the last one).** Latest blocks from your own node (public node if yours is off), search by block number or hash, block details with the coinbase, click a transaction for its facts. Blocks paid to your wallet are marked "yours". Light on purpose: it reads from the node live, nothing is indexed or stored.

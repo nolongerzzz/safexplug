@@ -143,3 +143,7 @@ input[readonly]{opacity:.85}
 .rail i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--warn),var(--ok));transition:width .9s ease-in-out}
 .rail.s0 i{width:8%}.rail.s1 i{width:36%}.rail.s2 i{width:70%}.rail.s3 i{width:100%}
 @media (prefers-reduced-motion:reduce){.app,#mineView .strip .tile,.nodechip.justsynced,#statusText.swap{animation:none}}
+
+/* warning banner eases in and out instead of pushing the page down in one jump */
+.banner{overflow:hidden;max-height:0;opacity:0;padding-top:0;padding-bottom:0;border-width:0;margin:-12px 0 0;transition:max-height .6s ease,opacity .6s ease,padding .6s ease,margin .6s ease,border-width .6s ease}
+.banner.on{margin:0;max-height:140px;opacity:1;padding-top:8px;padding-bottom:8px;border-width:1px}

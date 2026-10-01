@@ -135,8 +135,8 @@
     if (running && stats.hugepages !== null && stats.hugepages !== undefined && stats.hugepages < 100)
       warn.push(`Huge pages only ${stats.hugepages}% — hashrate may be reduced.`);
     const b = $('banner');
-    b.hidden = warn.length === 0;
-    b.textContent = warn.join(' ');
+    if (warn.length) b.textContent = warn.join(' ');
+    b.classList.toggle('on', warn.length > 0);
     renderState();
   }
 
