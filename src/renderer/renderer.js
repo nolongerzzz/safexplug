@@ -92,15 +92,25 @@
 
   // ---- status strip -------------------------------------------------------
   // 3-step entrance: node synced -> miner starting -> mining. Shown only while starting.
-  let railSeen = false, railTimer = null;
+  // Each step stays on screen for at least ~1.1 s so a fast start still reads as a smooth flow.
+  let railSeen = false, railTimer = null, railShown = -1, railAt = 0, railWant = -1;
+  function railApply(stage) {
+    const rail = $('rail'); railShown = stage; railAt = Date.now();
+    rail.hidden = false; rail.className = 'rail s' + stage;
+    clearTimeout(railTimer);
+    if (stage === 3) railTimer = setTimeout(() => { rail.hidden = true; railShown = -1; railSeen = false; }, 2200);
+  }
   function renderRail() {
     const rail = $('rail');
-    if (!waiting && !running) { clearTimeout(railTimer); rail.hidden = true; railSeen = false; return; }
+    if (!waiting && !running) { clearTimeout(railTimer); rail.hidden = true; railSeen = false; railShown = -1; railWant = -1; return; }
     const stage = waiting ? (node.state === 'synced' ? 1 : 0) : (stats.connected ? 3 : 2);
-    if (stage === 3 && !railSeen) { rail.hidden = true; return; }  // already mining when the app opened
-    clearTimeout(railTimer); railSeen = stage < 3;
-    rail.hidden = false; rail.className = 'rail s' + stage;
-    if (stage === 3) railTimer = setTimeout(() => { rail.hidden = true; }, 2200);
+    if (stage === 3 && !railSeen && railShown < 0) { rail.hidden = true; return; }  // already mining when the app opened
+    railSeen = true; railWant = stage;
+    if (stage <= railShown && railShown !== 3) { if (stage === railShown) return; }
+    const wait = railShown < 0 ? 0 : Math.max(0, 1100 - (Date.now() - railAt));
+    clearTimeout(railTimer);
+    if (wait === 0) railApply(stage);
+    else railTimer = setTimeout(() => { if (railWant >= 0 && (waiting || running)) railApply(railWant); }, wait);
   }
 
   function renderState() {
