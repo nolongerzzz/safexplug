@@ -333,7 +333,6 @@ app.whenReady().then(() => {
     settings.set({ walletRpc: '' }); payAt = 0; pollWallet(); return { ok: true };
   });
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
-  ipcMain.handle('wallet:restart-count', () => { const s = settings.set({ miningSince: Math.floor(Date.now() / 1000) }); payAt = 0; pollWallet(); return s; });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
   ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice() }; });
   ipcMain.handle('maint:overview', () => maint.overview());

@@ -457,13 +457,6 @@
     payNote = v && settings.walletRpc !== v ? 'The wallet tool must be on this computer, like 127.0.0.1:18082.' : '';
     if (payNote) $('pState').textContent = payNote;
   };
-  let resetArmed = null;
-  $('pReset').onclick = async () => {
-    const b = $('pReset');
-    if (!resetArmed) { b.textContent = 'Click again to confirm'; resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Restart count'; }, 4000); return; }
-    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Restart count';
-    settings = await window.safex.walletRestartCount();
-  };
 
   // ---- wallet setup (view-only, official wallet tools) -----------------------
   let ws = null; const wsLog = $('wsLog');

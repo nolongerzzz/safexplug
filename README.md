@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.7.4
+
+- Removed the "Restart count" button from Payments; the tally can no longer be reset by accident.
+
 ## What's new in 2.7.3
 
 - Payments: with the app-managed wallet the address is set automatically (127.0.0.1:18082, the wallet tool) and the manual box is hidden. If you point it at your node (17402) by mistake it now says so instead of "Method not found".
@@ -30,7 +34,7 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 
 ## What's new in 2.6
 
-- **Payments tab**: a rolling tally of payments received since mining began (count, mined blocks, latest, recent list). It reads incoming transfers from `safex-wallet-rpc` running on this computer, so the app never sees seeds or keys. The tally starts at your first mining start; "Restart count" resets it. Start the wallet with `--rpc-bind-ip 127.0.0.1 --disable-rpc-login --daemon-address 127.0.0.1:17402` (its node).
+- **Payments tab**: a rolling tally of payments received since mining began (count, mined blocks, latest, recent list). It reads incoming transfers from `safex-wallet-rpc` running on this computer, so the app never sees seeds or keys. The tally starts at your first mining start; There is no reset button, so the tally is never erased. Start the wallet with `--rpc-bind-ip 127.0.0.1 --disable-rpc-login --daemon-address 127.0.0.1:17402` (its node).
 
 ## What's new in 2.5
 

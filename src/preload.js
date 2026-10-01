@@ -21,7 +21,6 @@ contextBridge.exposeInMainWorld('safex', {
   onMaintResult: on('maint:result'),
   onNet: on('net:hashrate'),
   walletGet: () => ipcRenderer.invoke('wallet:get'),
-  walletRestartCount: () => ipcRenderer.invoke('wallet:restart-count'),
   wsStatus: () => ipcRenderer.invoke('wsetup:status'),
   wsDownload: () => ipcRenderer.invoke('wsetup:download'),
   wsAdd: (o) => ipcRenderer.invoke('wsetup:add', o),
