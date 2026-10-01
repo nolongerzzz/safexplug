@@ -32,6 +32,7 @@ function parseSummary(j) {
     h60: hr[1], h15m: hr[2],
     accepted: good, rejected: Math.max(0, all - good),
     uptime: Number(j.uptime) || 0,
+    hashesTotal: Number(j.results && j.results.hashes_total) || null,
     worker: j.worker_id || '',
     version: j.version || '',
     cpu: (j.cpu && j.cpu.brand) || '',

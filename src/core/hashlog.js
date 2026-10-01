@@ -24,6 +24,13 @@ class HashLog {
     this.dirty = 0;
     try { fs.mkdirSync(path.dirname(this.file), { recursive: true }); fs.writeFileSync(this.file, JSON.stringify(this.samples)); } catch (_) {}
   }
+  // Average hashrate per bucket across the window (null where nothing was recorded).
+  series(windowSec = 86400, bucketSec = 600, now = Math.floor(Date.now() / 1000)) {
+    const n = Math.ceil(windowSec / bucketSec), from = now - windowSec;
+    const sum = new Array(n).fill(0), cnt = new Array(n).fill(0);
+    for (const [t, hs] of this.samples) { if (t < from || t > now) continue; const i = Math.min(n - 1, Math.floor((t - from) / bucketSec)); sum[i] += hs; cnt[i]++; }
+    return sum.map((v, i) => (cnt[i] ? v / cnt[i] : null));
+  }
   // Average hashrate over the window, and how many minutes of it were mining.
   summary(windowSec = 86400, now = Math.floor(Date.now() / 1000)) {
     const from = now - windowSec; const w = this.samples.filter((x) => x[0] >= from);

@@ -31,6 +31,8 @@ let rigRows = [];
 let rigsBusy = false;
 let tsCache = { at: 0, status: null };
 let hashLog = null;
+const rigLogs = new Map();      // per-rig hashrate history
+const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
 let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
 let rpcTry = 0;
 let wsBusy = false;
@@ -201,6 +203,13 @@ async function pollNetwork() {
   sendNet({ hs: (info && info.netHashrate) || null, difficulty: (info && info.difficulty) || null, height: (info && info.height) || null, source });
 }
 
+const rigKey = (r) => `${r.host}:${r.port}`;
+function rigLog(key) {
+  if (!rigLogs.has(key)) rigLogs.set(key, new HashLog(path.join(app.getPath('userData'), 'rig-logs', crypto.createHash('sha1').update(key).digest('hex').slice(0, 12) + '.json')));
+  return rigLogs.get(key);
+}
+const HUNG_AFTER_MS = Number(process.env.SAFEX_HUNG_MS) || 120000;   // answering but not hashing for 2 minutes = hung
+const windows = (log) => ({ h1: log.summary(3600).avg, h6: log.summary(6 * 3600).avg, h24: log.summary(86400).avg });
 async function pollRigs() {
   if (rigsBusy) return;
   rigsBusy = true;
@@ -209,8 +218,15 @@ async function pollRigs() {
     // Tailscale status is cheap but not free: refresh at most every 15 s.
     if (Date.now() - tsCache.at > 15000) tsCache = { at: Date.now(), status: await tailscale.status() };
     const rows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
-    rigRows = rows.map((r) => ({ ...r, ts: tailscale.describe(tsCache.status, r) }));
-    send('rigs:status', { rows: rigRows, self: tailscale.describeSelf(tsCache.status) });
+    const now = Date.now();
+    rigRows = rows.map((r) => {
+      const key = rigKey(r); const log = rigLog(key); let hung = false;
+      if (r.online && r.hashrate > 0) { log.add(r.hashrate); zeroSince.delete(key); }
+      else if (r.online) { if (!zeroSince.has(key)) zeroSince.set(key, now); hung = now - zeroSince.get(key) > HUNG_AFTER_MS; }
+      else zeroSince.delete(key);
+      return { ...r, hung, avg: windows(log), ts: tailscale.describe(tsCache.status, r) };
+    });
+    send('rigs:status', { rows: rigRows, self: tailscale.describeSelf(tsCache.status), selfAvg: windows(hashLog) });
   } finally { rigsBusy = false; }
 }
 
@@ -325,6 +341,17 @@ app.whenReady().then(() => {
   });
   hashLog = new HashLog(path.join(app.getPath('userData'), 'hashrate-log.json'));
   ipcMain.handle('stats:day', () => hashLog.summary());
+  ipcMain.handle('stats:windows', () => windows(hashLog));
+  // 24 h charts: combined hashrate (this machine + every rig, 10 min buckets) and payments (hourly).
+  ipcMain.handle('chart:day', () => {
+    const logs = [hashLog, ...settings.get().rigs.map((r) => rigLog(rigKey(r)))];
+    const all = logs.map((l) => l.series(86400, 600));
+    const hash = all[0].map((_, i) => { let tot = 0, any = false; for (const a of all) if (a[i] != null) { tot += a[i]; any = true; } return any ? tot : null; });
+    const nowS = Math.floor(Date.now() / 1000); const pay = new Array(24).fill(0);
+    const list = (lastPay && lastPay.state === 'ok' && lastPay.last24 && lastPay.last24.list) || [];
+    for (const x of list) { const i = Math.min(23, Math.max(0, Math.floor((x.time - (nowS - 86400)) / 3600))); pay[i] += x.sfx; }
+    return { hash, pay, paysKnown: !!(lastPay && lastPay.state === 'ok') };
+  });
   setInterval(() => { if (miner.running && miner.stats) hashLog.add(miner.stats.hashrate); }, 60000);
   walletRpc = new wsetup.WalletRpc(walletDir());
   const wsStatus = () => ({ ...wsetup.status(walletDir()), running: walletRpc.running, busy: wsBusy, terminal: !!wsetup.findTerminal(), nodeHeight: lastNode.height || 0 });

@@ -1,6 +1,13 @@
-# Safex Community Miner 2.8
+# Safex Community Miner 2.9
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
+
+## What's new in 2.9
+
+- **Tab bubbles**: a red glowing bubble on Rigs when any rig is offline or hung (answering but not hashing for 2 minutes); a green glowing bubble on Payments when a new block is found (this rig's block counter, or a new payment in the wallet). It clears when you open Payments.
+- **Rigs table**: Now / 1 h / 6 h / 24 h hashrate averages per rig (this machine too), recorded once a minute while mining and kept for 8 days. Threads and total hashes are in the hover tip.
+- **24-hour charts** on Payments: combined hashrate (all rigs) and payments per hour.
+- Rigs tab explains where a rig's address and access token come from ("Share this miner's stats" on that rig).
 
 ## What's new in 2.8
 

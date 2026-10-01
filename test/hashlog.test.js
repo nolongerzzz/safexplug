@@ -23,4 +23,11 @@ t('samples are throttled to one a minute, zero hashrate ignored, survives a rest
 t('history older than 8 days is dropped', () => {
   const h = new HashLog(path.join(os.tmpdir(), 'x-' + Date.now())); h.add(1, T); h.add(1, T + 9 * 86400); assert.strictEqual(h.samples.length, 1);
 });
+t('series buckets the window and leaves gaps as null', () => {
+  const h = new HashLog(path.join(os.tmpdir(), 'ser-' + Date.now()));
+  h.add(1000, T + 10); h.add(3000, T + 70); h.add(500, T + 3600 + 10);
+  const ser = h.series(7200, 3600, T + 7200);   // two 1-hour buckets
+  assert.strictEqual(ser.length, 2); assert.strictEqual(ser[0], 2000); assert.strictEqual(ser[1], 500);
+  assert.strictEqual(h.series(7200, 3600, T + 7200 * 3)[0], null);
+});
 console.log(n + ' tests passed');

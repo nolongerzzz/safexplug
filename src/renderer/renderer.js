@@ -144,7 +144,7 @@
 
   // ---- events from main ---------------------------------------------------
   window.safex.onLog(addLog);
-  window.safex.onStats((s) => { stats = s; renderStats(); });
+  window.safex.onStats((s) => { if (running && (s.blocks || 0) > (stats.blocks || 0)) setPayBubble(true); stats = s; renderStats(); });
   window.safex.onState((s) => {
     running = !!s.running;
     if (!running) {
@@ -174,7 +174,7 @@
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
-    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
+    if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
   $('tabBtnMine').onclick = () => showTab('mine');
   $('tabBtnNode').onclick = () => showTab('node');
@@ -366,44 +366,49 @@
   }
   function pill(td, text, cls) { const sp = document.createElement('span'); sp.className = 'pill ' + cls; sp.textContent = text; td.appendChild(sp); }
 
+  // Tab bubbles: red glow on Rigs when a rig is offline or hung; green glow on Payments for a new block.
+  const rigProblems = (rows) => rows.filter((r) => !r.online || r.hung).length;
   function setRigBadge(n) {
-    const b = $('tabBtnRigs'); b.textContent = n ? `Rigs ✗ ${n}` : 'Rigs';
-    b.classList.toggle('alert', n > 0);
+    const b = $('bubRigs'); b.hidden = n === 0; b.title = n ? `${n} rig${n === 1 ? '' : 's'} offline or hung` : '';
+    $('tabBtnRigs').classList.toggle('alert', n > 0);
   }
+  let selfAvg = null;
+  const avgCells = (tr, a) => { for (const k of ['h1', 'h6', 'h24']) cell(tr, a && a[k] ? fmtHs(a[k]) : '—', 'num'); };
   function renderRigs() {
     const body = $('rigBody'); body.textContent = '';
     // this machine
     const me = document.createElement('tr'); me.className = 'me';
     nameCell(me, 'This machine', selfTs, running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
-    cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); cell(me, stats.threads ?? '—', 'num');
+    { const c = cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); if (stats.threads) c.title = `${stats.threads} threads`; }
+    avgCells(me, selfAvg);
     cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
     body.appendChild(me);
     let hs = running ? (stats.hashrate || 0) : 0, acc = running ? (stats.accepted || 0) : 0, rej = running ? (stats.rejected || 0) : 0, online = running && stats.connected ? 1 : 0;
-    let downCount = 0;
     rigRows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      const mk = !r.online ? 'bad' : (r.otherWallet || !(r.hashrate > 0)) ? 'warn' : 'ok';
-      downCount += mk === 'bad' ? 1 : 0;
+      const mk = (!r.online || r.hung) ? 'bad' : (r.otherWallet || !(r.hashrate > 0)) ? 'warn' : 'ok';
       nameCell(tr, r.name, r.ts, mk);
       const td = cell(tr, '');
       if (!r.online) pill(td, r.reason === 'auth' ? 'wrong token' : 'offline', 'off');
+      else if (r.hung) pill(td, 'hung', 'off');
       else if (r.otherWallet) pill(td, 'other wallet', 'warn');
       else pill(td, 'mining', 'on');
-      cell(tr, r.online ? fmtHs(r.hashrate) : '—', 'num'); cell(tr, r.online ? (r.threads ?? '—') : '—', 'num');
+      { const c = cell(tr, r.online ? fmtHs(r.hashrate) : '—', 'num'); const tip = []; if (r.threads) tip.push(`${r.threads} threads`); if (r.hashesTotal) tip.push(`${r.hashesTotal.toLocaleString()} hashes this run`); if (tip.length) c.title = tip.join(' · '); }
+      avgCells(tr, r.avg);
       cell(tr, r.online ? `${r.accepted} / ${r.rejected}` : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
       const x = cell(tr, ''); const b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Remove';
       b.onclick = async () => { settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
       x.appendChild(b); body.appendChild(tr);
       if (r.online && !r.otherWallet) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
     });
-    setRigBadge(downCount);
+    setRigBadge(rigProblems(rigRows));
     { const e = expectedParts(hs || null); $('cExp').textContent = e.time; $('cExpSub').textContent = e.sub; }
     $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = `${acc} / ${rej}`;
     $('shareStats').checked = settings.shareStats;
     $('shareInfo').hidden = !settings.shareStats;
     if (settings.shareStats) { $('myAddr').value = `${init.lanAddress || 'this-machine'}:${settings.apiPort}`; $('myToken').value = settings.apiToken; }
   }
-  window.safex.onRigs((p) => { rigRows = p.rows || []; selfTs = p.self || null; setRigBadge(rigRows.filter((r) => !r.online).length); if (!$('rigsView').hidden) renderRigs(); });
+  window.safex.onRigs((p) => { rigRows = p.rows || []; selfTs = p.self || null; selfAvg = p.selfAvg || null; setRigBadge(rigProblems(rigRows)); if (!$('rigsView').hidden) renderRigs(); });
 
   $('rAdd').onclick = async () => {
     const err = $('rErr'); err.hidden = true;
@@ -426,6 +431,8 @@
   window.safex.onStats(() => { if (!$('rigsView').hidden) renderRigs(); });
 
   // ---- payments -----------------------------------------------------------
+  function setPayBubble(on) { $('bubPay').hidden = !on; $('tabBtnPay').classList.toggle('glow', on); }
+  let payCount = null;
   const fmtSfx = (v) => (v >= 100 ? v.toFixed(2) : v.toFixed(4)).replace(/\.?0+$/, '') + ' SFX';
   const fmtWhen = (t) => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   let payNote = '';
@@ -439,7 +446,12 @@
     $('pState').textContent = payNote || msgs[p.state] || '';
     const ok = p.state === 'ok';
     $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
-    $('pSince').textContent = p.managed ? (p.scanFrom ? `everything found since block ${p.scanFrom.toLocaleString()}` : 'everything your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'counts from your first mining start';
+    $('pSince').textContent = p.managed ? (p.scanFrom ? `everything found since block ${p.scanFrom.toLocaleString()}` : 'everything your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'since you started mining';
+    if (ok) {
+      payCount = p.count;
+      if (settings.walletSeen < 0) settings = { ...settings, walletSeen: p.count }, window.safex.setSettings({ walletSeen: p.count });   // first connect: nothing is "new" yet
+      else if (p.count > settings.walletSeen) { if ($('payView').hidden) setPayBubble(true); else { settings.walletSeen = p.count; window.safex.setSettings({ walletSeen: p.count }); } }
+    }
     $('pCount').textContent = ok ? String(p.count) : '0';
     $('pLatest').textContent = ok && p.latest ? `latest ${fmtWhen(p.latest)}` : '';
     $('pDay').textContent = ok ? fmtSfx(p.last24.sfx) : '—';
@@ -458,6 +470,31 @@
     payNote = v && settings.walletRpc !== v ? 'The wallet tool must be on this computer, like 127.0.0.1:18082.' : '';
     if (payNote) $('pState').textContent = payNote;
   };
+
+  // ---- 24 h charts (inline SVG, no libraries) -----------------------------
+  const NS = 'http://www.w3.org/2000/svg';
+  function drawArea(svg, vals, fmt, endLabels) {
+    const W = 420, H = 110, padL = 4, padB = 16; svg.textContent = '';
+    const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+    const real = vals.filter((v) => v != null); const max = real.length ? Math.max(...real) : 0;
+    if (!max) { const t = mk('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'chart-empty' }); t.textContent = 'nothing recorded yet'; return; }
+    const n = vals.length, x = (i) => padL + (n === 1 ? 0 : i / (n - 1)) * (W - padL * 2), y = (v) => 6 + (1 - v / max) * (H - padB - 10);
+    let d = '', started = false, line = '';
+    vals.forEach((v, i) => { const yy = v == null ? y(0) : y(v); line += (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + yy.toFixed(1); });
+    mk('path', { d: line + `L${x(n - 1)} ${H - padB}L${x(0)} ${H - padB}Z`, class: 'chart-fill' });
+    mk('path', { d: line, class: 'chart-line', fill: 'none' });
+    mk('line', { x1: padL, x2: W - padL, y1: H - padB, y2: H - padB, class: 'chart-axis' });
+    const tm = mk('text', { x: padL + 2, y: 12, class: 'chart-label' }); tm.textContent = 'peak ' + fmt(max);
+    const a = mk('text', { x: padL, y: H - 3, class: 'chart-label' }); a.textContent = endLabels[0];
+    const b = mk('text', { x: W - padL, y: H - 3, 'text-anchor': 'end', class: 'chart-label' }); b.textContent = endLabels[1];
+  }
+  function drawCharts() {
+    window.safex.chartDay().then((c) => {
+      drawArea($('chHash'), c.hash, fmtHs, ['24 h ago', 'now']);
+      drawArea($('chPay'), c.paysKnown ? c.pay : [], fmtSfx, ['24 h ago', 'now']);
+    });
+  }
+  setInterval(() => { if (!$('payView').hidden) drawCharts(); }, 30000);
 
   // ---- wallet setup (view-only, official wallet tools) -----------------------
   let ws = null; const wsLog = $('wsLog');
