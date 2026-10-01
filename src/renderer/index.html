@@ -199,7 +199,6 @@
         <button id="wsDl" class="mini big">1. Download wallet tools</button>
         <label class="grow">Scan from block<input id="wsHeight" type="text" inputmode="numeric" spellcheck="false" placeholder="e.g. 2090000"></label>
         <button id="wsAdd" class="mini big">2. Add my wallet</button>
-        <button id="wsRemove" class="mini" hidden>Remove</button>
       </div>
       <div class="hint" id="wsState"></div>
       <pre id="wsLog" class="smalllog" hidden></pre>
@@ -215,6 +214,7 @@
       <div id="pState" class="hint"></div>
       <div class="hint">Only your wallet's incoming payments are read. This app never asks for or stores your seed or keys.</div>
       <table class="rigtable"><thead><tr><th>When</th><th>Block</th><th>Amount</th><th>Type</th><th>Confirmations</th></tr></thead><tbody id="pBody"></tbody></table>
+      <div class="row" style="justify-content:flex-end"><button id="wsRemove" class="mini" hidden>Remove wallet</button></div>
     </section>
   </div>
   <footer id="foot"></footer>

@@ -446,7 +446,7 @@
     $('pState').textContent = payNote || msgs[p.state] || '';
     const ok = p.state === 'ok';
     $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
-    $('pSince').textContent = p.managed ? (p.scanFrom ? `everything found since block ${p.scanFrom.toLocaleString()}` : 'everything your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'since you started mining';
+    $('pSince').textContent = p.managed ? (p.scanFrom ? `since block ${p.scanFrom.toLocaleString()}` : 'all your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'since you started mining';
     if (ok) {
       payCount = p.count;
       if (settings.walletSeen < 0) settings = { ...settings, walletSeen: p.count }, window.safex.setSettings({ walletSeen: p.count });   // first connect: nothing is "new" yet

@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.9.2
+
+- Payments: the setup box disappears once your wallet is added (a small "Remove wallet" button sits under the payments list).
+
 ## What's new in 2.9.1
 
 - Payments: confirmations are computed from your node's height (the wallet tool reported 0 for old payments).
