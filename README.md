@@ -1,30 +1,41 @@
-# Safex Community One-Click Miner
+# Safex Community Miner 2.1
 
-Created by Safex community to make SFX mining easier and more user friendly. Support Windows, Mac and Linux.
+One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the xmrig engine (6.16.2, `rx/sfx`).
 
-## Technical documentation
+## What's new in 2.1
 
-- Builded on Nodejs and Electron
-- Application uses Xmrig (v6.16.2) as mining platform
+- **Live viewport**: the miner's real output, colour-coded, with Follow / Copy / Clear.
+- **Status strip**: status light, hashrate, threads, accepted/rejected shares, blocks found.
+- **Two modes**: **Pool** (as before) and **My Node (solo)**, which mines directly against your own `safexd` (`--daemon`, default `127.0.0.1:17402`).
+- **Node check**: in solo mode the app polls your node and shows Synced / Syncing with progress. "Wait for synced node" holds Start until the node is at the tip, then starts by itself.
+- **Warnings that matter**: tells you when CPU tuning (MSR) or huge pages didn't apply, the usual cause of low hashrate.
+- **Settings are remembered**, plus an optional "Start mining when app opens".
+- **Developer donation is a visible setting** (xmrig's default is 1%).
+- Modernised: current Electron, context isolation on, no Node access from the page, miner runs in the main process.
 
-### Installation and running
+## Run / test / build
 
 ```sh
 npm install
-npm start
+npm start          # run
+npm test           # parser + miner checks (runs the real xmrig briefly)
+npm run dist       # electron-builder (deb/rpm, nsis, dmg)
 ```
 
-## User documentation
+## Notes
 
-- Binaries for different platforms can be found on releases section
-  -- Windows: exe file
-  -- Mac: dmg file
-  -- Linux: deb or rpm, depending on the distribution
-- Since as mining platform it uses Xmrig it may be recognized as potential malware. If antivirus removes Xmrig, it needs to be restored and added to exception list.
+- Use your **public** address only. The app never asks for a seed or private key.
+- Antivirus often flags xmrig. If it removes it, restore it and add an exception.
+- Best hashrate needs admin/root (MSR tuning). Windows: run as Administrator. Linux: run with root, or accept lower hashrate.
+- Solo mining pays only when your machine finds a whole block itself; hashrate alone doesn't predict payouts.
 
-##### Windows users:
+## Roadmap
 
-- After installation application will automatically start. For better hashrate application needs to be started in Administration mode, which means that you can close application, search it in Windows menu as 'safex-community-miner', right click on it and 'Run as Administrator'
+1. 2.1 standalone miner (this)
+2. Node panel (run `safexd` in Docker, sync progress, gate Start Mining on sync)
+3. Combined view, auto-start on boot, remote-access status
+4. Wallet sync
+5. Local explorer
 
 ## License
 

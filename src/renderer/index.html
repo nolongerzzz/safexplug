@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safex Community Miner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <img src="../public/images/logo.png" alt="Safex" class="logo">
+    <div class="cpu"><span id="cpuModel">—</span></div>
+  </header>
+
+  <section class="strip" aria-label="Mining status">
+    <div class="tile status"><span id="light" class="light off"></span><div><div class="k">Status</div><div class="v" id="statusText">Stopped</div></div></div>
+    <div class="tile"><div class="k">Hashrate</div><div class="v big" id="hashrate">—</div></div>
+    <div class="tile"><div class="k">Threads</div><div class="v" id="threads">—</div></div>
+    <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="shares">0 / 0</div></div>
+    <div class="tile"><div class="k">Blocks found</div><div class="v" id="blocks">0</div></div>
+  </section>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="panel">
+    <div class="mode" role="tablist">
+      <button id="modePool" role="tab">Pool</button>
+      <button id="modeSolo" role="tab">My Node (solo)</button>
+    </div>
+
+    <label>Safex address (public address only)
+      <input id="address" type="text" spellcheck="false" autocomplete="off" placeholder="Safex…">
+    </label>
+
+    <div class="row" id="poolRow">
+      <label class="grow">Pool
+        <select id="pool">
+          <option>pool.safex.org:3311</option>
+          <option>eu.pool.safex.ninja:3311</option>
+          <option>usa.pool.safex.ninja:3311</option>
+          <option>aus.pool.safex.ninja:3311</option>
+        </select>
+      </label>
+      <label class="grow">Miner name (optional)
+        <input id="name" type="text" placeholder="Safex Community Miner">
+      </label>
+    </div>
+
+    <div class="row" id="soloRow" hidden>
+      <label class="grow">Node address
+        <input id="node" type="text" spellcheck="false" placeholder="127.0.0.1:17402">
+      </label>
+      <div class="nodechip" id="nodeChip"><span class="dot"></span><span id="nodeText">Checking node…</span></div>
+    </div>
+    <div class="progress" id="syncBar" hidden><div id="syncFill"></div></div>
+
+    <div class="row">
+      <label>CPU use
+        <select id="cpu">
+          <option value="100">100%</option><option value="75">75%</option>
+          <option value="50">50%</option><option value="25">25%</option>
+        </select>
+      </label>
+      <label>Developer donation
+        <select id="donate">
+          <option value="0">0% (none)</option><option value="1">1% (xmrig default)</option>
+          <option value="2">2%</option><option value="5">5%</option>
+        </select>
+      </label>
+      <label class="check"><input id="autostart" type="checkbox"> Start mining when app opens</label>
+      <label class="check" id="gateWrap"><input id="requireSynced" type="checkbox"> Wait for synced node</label>
+    </div>
+
+    <button id="go" class="go">Start mining</button>
+    <div id="error" class="error" hidden></div>
+  </section>
+
+  <section class="viewport">
+    <div class="vp-head">
+      <span>Miner output</span>
+      <span class="spacer"></span>
+      <label class="check small"><input id="follow" type="checkbox" checked> Follow</label>
+      <button id="copyLog" class="mini">Copy</button>
+      <button id="clearLog" class="mini">Clear</button>
+    </div>
+    <pre id="log" aria-live="off"></pre>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<script src="renderer.js"></script>
+</body>
+</html>

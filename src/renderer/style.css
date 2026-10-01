@@ -1,0 +1,45 @@
+:root{--bg:#0d1b2a;--panel:#14263a;--line:#23405c;--text:#e8f1f8;--mute:#8aa3b8;--accent:#2fb4ff;--ok:#2ecc71;--warn:#f5b041;--bad:#ec7063}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif}
+.app{max-width:860px;margin:0 auto;padding:14px 16px 10px;display:flex;flex-direction:column;gap:12px;height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{height:34px}
+.cpu{color:var(--mute);font-size:12px;text-align:right}
+.strip{display:grid;grid-template-columns:1.2fr 1.4fr .8fr 1.3fr 1fr;gap:8px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0;display:flex;align-items:center;gap:10px}
+.tile:not(.status){flex-direction:column;align-items:flex-start;justify-content:center;gap:0}
+.k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.v{font-size:17px;font-weight:600;white-space:nowrap}.v.big{font-size:21px;color:var(--accent)}
+.light{width:14px;height:14px;border-radius:50%;flex:none;background:#445;box-shadow:0 0 0 3px #0003}
+.light.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.light.wait{background:var(--warn);box-shadow:0 0 10px var(--warn)}
+.light.bad{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+.banner{background:#3a2f12;border:1px solid #7a5f1c;color:#ffd98a;border-radius:8px;padding:8px 12px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.mode{display:flex;gap:6px;background:#0b1624;border-radius:9px;padding:4px;width:max-content}
+.mode button{background:none;border:0;color:var(--mute);padding:7px 16px;border-radius:6px;cursor:pointer;font:inherit}
+.mode button.sel{background:var(--accent);color:#04202f;font-weight:600}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+label.check{flex-direction:row;align-items:center;gap:6px;color:var(--text);font-size:13px;align-self:end;padding-bottom:8px}
+label.check.small{padding:0;font-size:12px;color:var(--mute)}
+input[type=text],select{background:#0b1624;border:1px solid var(--line);color:var(--text);border-radius:7px;padding:9px 10px;font:inherit;min-width:0}
+input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input:disabled,select:disabled{opacity:.55}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}.grow{flex:1 1 220px}
+.nodechip{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#0b1624;border:1px solid var(--line);border-radius:7px;font-size:13px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:#556}
+.nodechip.synced .dot{background:var(--ok)}.nodechip.syncing .dot{background:var(--warn)}.nodechip.offline .dot{background:var(--bad)}
+.progress{height:6px;background:#0b1624;border-radius:3px;overflow:hidden}
+#syncFill{height:100%;width:0;background:var(--warn);transition:width .6s}
+.go{background:var(--accent);color:#04202f;border:0;border-radius:9px;padding:12px;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.go.active{background:var(--bad);color:#2a0a06}
+.go:disabled{opacity:.6;cursor:default}
+.error{color:var(--bad);font-size:13px}
+.viewport{background:#08111c;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;flex:1;min-height:140px}
+.vp-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.spacer{flex:1}.mini{background:#14263a;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
+#log{margin:0;padding:10px 12px;flex:1;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#b7d0e2;white-space:pre-wrap;word-break:break-all;min-height:0}
+#log .l-warn{color:var(--warn)}#log .l-err{color:var(--bad)}#log .l-hr{color:var(--accent)}#log .l-ok{color:var(--ok)}#log .l-cmd{color:var(--mute)}
+footer{color:var(--mute);font-size:11px;text-align:center}
+[hidden]{display:none!important}
+@media(max-width:720px){.strip{grid-template-columns:1fr 1fr}}

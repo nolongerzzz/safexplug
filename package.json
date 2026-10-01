@@ -1,36 +1,22 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Safex Community Miner",
-  "main": "src/index.js",
+  "main": "src/main.js",
   "scripts": {
-    "start": "electron-forge start",
-    "lint": "echo \"No linting configured\"",
-    "package": "electron-builder"
+    "start": "electron .",
+    "test": "node test/parser.test.js && node test/miner.test.js",
+    "dist": "electron-builder"
   },
   "keywords": [],
   "author": {
     "name": "galicone"
   },
   "license": "MIT",
-  "dependencies": {
-    "body-parser": "^1.19.0",
-    "electron-context-menu": "^3.1.1",
-    "electron-squirrel-startup": "^1.0.0",
-    "winston": "^3.3.3"
-  },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.61",
-    "electron": "16.0.5",
-    "electron-builder": "^22.14.13"
-  },
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "name": "safex-community-miner"
-      }
-    }
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   },
   "build": {
     "appId": "com.electron.one-click-miner",
@@ -58,6 +44,11 @@
       "icon": "src/public/images/icon.png",
       "category": "Utility"
     },
-    "asar": false
+    "asar": false,
+    "productName": "Safex Community Miner",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
   }
 }
