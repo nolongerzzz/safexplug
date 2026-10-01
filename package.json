@@ -1,7 +1,7 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Safex Community Miner",
   "main": "src/main.js",
   "scripts": {
@@ -11,7 +11,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "galicone"
+    "name": "Safex community",
+    "email": "noreply@example.invalid"
   },
   "license": "MIT",
   "devDependencies": {
@@ -38,11 +39,11 @@
     },
     "linux": {
       "target": [
-        "deb",
-        "rpm"
+        "deb"
       ],
       "icon": "src/public/images/icon.png",
-      "category": "Utility"
+      "category": "Utility",
+      "maintainer": "Safex community <noreply@example.invalid>"
     },
     "asar": false,
     "productName": "Safex Community Miner",
@@ -50,5 +51,6 @@
       "src/**/*",
       "package.json"
     ]
-  }
+  },
+  "homepage": "https://github.com/safex/team-1-click-miner"
 }

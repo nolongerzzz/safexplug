@@ -10,7 +10,7 @@ if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'process.versions.node.spli
 fi
 npm install --no-audit --no-fund
 npx electron-builder --linux deb
-DEB="$(ls -1 dist/*.deb | head -n1)"
+DEB="$(ls -1t dist/*.deb | head -n1)"
 echo "Built $DEB"
 sudo apt-get install -y "./$DEB"
 echo "Installed. Open 'Safex Community Miner' from your menu."

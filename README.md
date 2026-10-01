@@ -1,6 +1,6 @@
 # Safex Community Miner 2.1
 
-One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the xmrig engine (6.16.2, `rx/sfx`).
+One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
 ## What's new in 2.1
 
@@ -40,3 +40,7 @@ npm run dist       # electron-builder (deb/rpm, nsis, dmg)
 ## License
 
 MIT
+
+## Engine note (solo mining)
+
+Solo mode needs xmrig 6.26 or newer. Older xmrig (6.16.2, still bundled for Mac and Windows) asks the node for a block template with `extra_nonce`, which `safexd` rejects with `Internal error: failed to create block template (-5)`; newer xmrig sends `reserve_size`, which works. Linux ships 6.26.0. Mac/Windows builds need the same engine swap before solo mode will work there. xmrig is GPL-3.0 and runs as a separate program next to this MIT app.

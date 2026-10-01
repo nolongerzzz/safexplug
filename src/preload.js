@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('safex', {
   setSettings: (p) => ipcRenderer.invoke('settings:set', p),
   start: (p) => ipcRenderer.invoke('miner:start', p),
   stop: () => ipcRenderer.invoke('miner:stop'),
+  copyText: (t) => ipcRenderer.invoke('clipboard:write', t),
   onLog: on('miner:log'),
   onStats: on('miner:stats'),
   onState: on('miner:state'),

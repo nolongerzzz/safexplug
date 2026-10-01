@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, clipboard } = require('electron');
 const path = require('path');
 const os = require('os');
 const { Miner } = require('./core/miner');
@@ -58,6 +58,33 @@ function createWindow() {
   // Never navigate the app window to a remote page; open links in the browser.
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+
+  // Clipboard: the window's menu bar is hidden, and on Linux that disables the
+  // Ctrl+C/V/X/A shortcuts, so handle them directly.
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || !(input.control || input.meta) || input.alt) return;
+    const wc = win.webContents;
+    const k = input.key.toLowerCase();
+    const act = { c: 'copy', v: 'paste', x: 'cut', a: 'selectAll', z: input.shift ? 'redo' : 'undo' }[k];
+    if (!act) return;
+    event.preventDefault();
+    wc[act]();
+  });
+
+  // Right-click menu (Cut / Copy / Paste / Select all).
+  win.webContents.on('context-menu', (_e, params) => {
+    const f = params.editFlags;
+    const items = [];
+    if (params.isEditable) {
+      items.push({ label: 'Cut', enabled: f.canCut, click: () => win.webContents.cut() });
+    }
+    items.push({ label: 'Copy', enabled: f.canCopy, click: () => win.webContents.copy() });
+    if (params.isEditable) {
+      items.push({ label: 'Paste', enabled: f.canPaste, click: () => win.webContents.paste() });
+    }
+    items.push({ type: 'separator' }, { label: 'Select all', click: () => win.webContents.selectAll() });
+    Menu.buildFromTemplate(items).popup({ window: win });
+  });
 }
 
 app.whenReady().then(() => {
@@ -77,6 +104,7 @@ app.whenReady().then(() => {
     version: app.getVersion(),
   }));
   ipcMain.handle('settings:set', (_e, patch) => { const s = settings.set(patch || {}); pollNode(); return s; });
+  ipcMain.handle('clipboard:write', (_e, text) => { clipboard.writeText(String(text).slice(0, 2_000_000)); return true; });
   ipcMain.handle('miner:start', (_e, patch) => startMining(patch));
   ipcMain.handle('miner:stop', () => {
     waitingForSync = false; send('miner:waiting', { waiting: false }); miner.stop(); return { ok: true };

@@ -130,7 +130,9 @@
   }
   $('clearLog').onclick = () => { logEl.textContent = ''; };
   $('copyLog').onclick = async () => {
-    try { await navigator.clipboard.writeText([...logEl.children].map((c) => c.title || c.textContent).join('\n')); } catch (_) {}
+    const text = [...logEl.children].map((c) => c.title || c.textContent).join('\n');
+    await window.safex.copyText(text);
+    const b = $('copyLog'); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1200);
   };
 
   // ---- events from main ---------------------------------------------------
