@@ -20,6 +20,12 @@ const sample = [
     assert.strictEqual(r.latest, T0 + 30); assert.strictEqual(r.recent[0].txid, 'c');
   });
   await t('each entry carries its block height', () => { const r = W.tally(sample, T0); assert.strictEqual(r.recent.find((x) => x.txid === 'a').height, 2097379); });
+  await t('last 24 hours window sums only recent payments', () => {
+    const now = T0 + 86400 + 15;   // 'a' (T0+10) just fell out of the window, 'b' (T0+20) and 'c' (T0+30) are inside
+    const r = W.tally(sample, 0, now);
+    assert.strictEqual(r.last24.count, 2); assert.ok(Math.abs(r.last24.sfx - (4 + 2.5)) < 1e-9);
+    assert.strictEqual(W.tally(sample, 0, T0 + 5 * 86400).last24.count, 0);
+  });
   await t('since 0 counts everything incoming', () => assert.strictEqual(W.tally(sample, 0).count, 4));
   await t('empty / junk input is safe', () => { assert.strictEqual(W.tally(null).count, 0); assert.strictEqual(W.tally([null, 5, {}]).count, 0); });
   let calls = [];

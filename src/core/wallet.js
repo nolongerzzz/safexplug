@@ -32,8 +32,8 @@ function rpc(hostport, method, params = {}, timeoutMs = 8000) {
 
 // Pure: sum incoming transfers that arrived at/after `since` (unix seconds).
 // Mined block rewards show up with type "block", other deposits with "in".
-function tally(transfers, since = 0) {
-  const t = { count: 0, atomic: 0, mined: 0, minedAtomic: 0, tokenAtomic: 0, latest: null, recent: [] };
+function tally(transfers, since = 0, now = Math.floor(Date.now() / 1000)) {
+  const t = { last24: { count: 0, atomic: 0, sfx: 0 }, count: 0, atomic: 0, mined: 0, minedAtomic: 0, tokenAtomic: 0, latest: null, recent: [] };
   const seen = new Set();
   for (const x of transfers || []) {
     if (!x || (x.type !== 'in' && x.type !== 'block')) continue;
@@ -44,11 +44,13 @@ function tally(transfers, since = 0) {
     const amt = Number(x.amount) || 0;
     t.count++; t.atomic += amt; t.tokenAtomic += Number(x.token_amount) || 0;
     if (x.type === 'block') { t.mined++; t.minedAtomic += amt; }
+    if (Number(x.timestamp) >= now - 86400) { t.last24.count++; t.last24.atomic += amt; }
     t.recent.push({ time: Number(x.timestamp), sfx: amt / ATOMIC, type: x.type, confirmations: Number(x.confirmations) || 0, txid: x.txid || '', height: Number(x.height) || null });
   }
   t.recent.sort((a, b) => b.time - a.time);
   t.latest = t.recent.length ? t.recent[0].time : null;
   t.recent = t.recent.slice(0, 20);
+  t.last24.sfx = t.last24.atomic / ATOMIC;
   t.sfx = t.atomic / ATOMIC; t.minedSfx = t.minedAtomic / ATOMIC; t.tokens = t.tokenAtomic / ATOMIC;
   return t;
 }

@@ -11,6 +11,7 @@ const maint = require('./core/maintenance');
 const tailscale = require('./core/tailscale');
 const wallet = require('./core/wallet');
 const wsetup = require('./core/walletsetup');
+const { HashLog } = require('./core/hashlog');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -29,6 +30,7 @@ let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
 let tsCache = { at: 0, status: null };
+let hashLog = null;
 let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
 let rpcTry = 0;
 let wsBusy = false;
@@ -321,6 +323,9 @@ app.whenReady().then(() => {
     if ('walletRpc' in patch || 'miningSince' in patch) { payAt = 0; pollWallet(); }
     return s;
   });
+  hashLog = new HashLog(path.join(app.getPath('userData'), 'hashrate-log.json'));
+  ipcMain.handle('stats:day', () => hashLog.summary());
+  setInterval(() => { if (miner.running && miner.stats) hashLog.add(miner.stats.hashrate); }, 60000);
   walletRpc = new wsetup.WalletRpc(walletDir());
   const wsStatus = () => ({ ...wsetup.status(walletDir()), running: walletRpc.running, busy: wsBusy, terminal: !!wsetup.findTerminal(), nodeHeight: lastNode.height || 0 });
   ipcMain.handle('wsetup:status', () => wsStatus());
@@ -392,5 +397,5 @@ app.whenReady().then(() => {
 });
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-app.on('before-quit', () => { if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
+app.on('before-quit', () => { if (hashLog) hashLog.save(); if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

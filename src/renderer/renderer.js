@@ -174,7 +174,7 @@
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
-    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); }
+    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
   $('tabBtnMine').onclick = () => showTab('mine');
   $('tabBtnNode').onclick = () => showTab('node');
@@ -441,8 +441,9 @@
     $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
     $('pSince').textContent = p.managed ? (p.scanFrom ? `everything found since block ${p.scanFrom.toLocaleString()}` : 'everything your wallet has found') : p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'counts from your first mining start';
     $('pCount').textContent = ok ? String(p.count) : '0';
-    $('pMined').textContent = ok && p.mined ? `${p.mined} mined block${p.mined === 1 ? '' : 's'}` : '';
-    $('pLatest').textContent = ok && p.latest ? fmtWhen(p.latest) : '—';
+    $('pLatest').textContent = ok && p.latest ? `latest ${fmtWhen(p.latest)}` : '';
+    $('pDay').textContent = ok ? fmtSfx(p.last24.sfx) : '—';
+    $('pDayN').textContent = ok ? `${p.last24.count} payment${p.last24.count === 1 ? '' : 's'} in the last 24 h` : '';
     const body = $('pBody'); body.textContent = '';
     for (const r of ok ? p.recent : []) {
       const tr = document.createElement('tr');
@@ -477,6 +478,10 @@
     else msg = ws.running ? 'Wallet tool is running and reading your node. It will catch up with the chain first, so the tally can lag until it has scanned.' : 'Wallet is set up. The wallet tool starts once your node answers.';
     st.textContent = msg;
   }
+  const loadDay = () => window.safex.statsDay().then((d) => {
+    $('hDay').textContent = d.avg ? fmtHs(d.avg) : '—';
+    const h = d.minutes / 60; $('hDayN').textContent = d.avg ? `mining ${h >= 10 ? Math.round(h) : h.toFixed(1)} h of 24` : 'no mining recorded yet';
+  });
   const loadWs = () => window.safex.wsStatus().then((x) => { ws = x; renderWs(); });
   window.safex.onWsLog((l) => { wsLog.hidden = false; wsLog.textContent += l + '\n'; wsLog.scrollTop = wsLog.scrollHeight; });
   $('wsDl').onclick = async () => {
@@ -492,7 +497,7 @@
     $('wsState').textContent = r.ok ? 'The wallet window is open. Paste your address, then your private view key, there. This page updates when it is done.' : r.error;
   };
   $('wsRemove').onclick = async () => { await window.safex.wsRemove(); loadWs(); };
-  setInterval(() => { if (!$('payView').hidden) loadWs(); }, 3000);
+  setInterval(() => { if (!$('payView').hidden) { loadWs(); loadDay(); } }, 3000);
 
   fillForm();
   renderStats();

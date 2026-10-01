@@ -1,6 +1,10 @@
-# Safex Community Miner 2.7
+# Safex Community Miner 2.8
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
+
+## What's new in 2.8
+
+- **24-hour view on Payments**: SFX and payment count for the last 24 hours, plus your average hashrate over the last 24 hours (sampled once a minute while mining, kept across restarts for 8 days) with how many of those hours you were actually mining. Together they give the daily hash/pay picture.
 
 ## What's new in 2.7.6
 

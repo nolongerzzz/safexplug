@@ -18,7 +18,7 @@ app.whenReady().then(async () => {
   await js(`document.getElementById('tabBtnPay').click()`); await wait(300);
   console.log('before connect:', await js(`document.getElementById('pState').textContent`));
   await js(`document.getElementById('pAddr').value='127.0.0.1:18082';document.getElementById('pSave').click()`); await wait(1500);
-  console.log('total:', await g('pTotal'), '|', await g('pSince'), '| count:', await g('pCount'), '|', await g('pMined'), '| state:', await g('pState'));
+  console.log('total:', await g('pTotal'), '|', await g('pSince'), '| count:', await g('pCount'), '|', await g('pDay'), '|', await g('pDayN'), '|', await g('hDay'), '|', await g('hDayN'), '| state:', await g('pState'));
   console.log('rows:', JSON.stringify(await js(`[...document.querySelectorAll('#pBody tr')].map(tr=>tr.innerText.replace(/\\t/g,' | '))`)));
   fs.writeFileSync(path.join(OUT, 'pay.png'), (await wc.capturePage()).toPNG());
   await js(`document.getElementById('pAddr').value='10.0.0.5:18082';document.getElementById('pSave').click()`); await wait(300);
