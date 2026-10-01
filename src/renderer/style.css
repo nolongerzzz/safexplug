@@ -38,8 +38,20 @@ input:disabled,select:disabled{opacity:.55}
 .viewport{background:#08111c;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;flex:1;min-height:140px}
 .vp-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .spacer{flex:1}.mini{background:#14263a;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
-#log{margin:0;padding:10px 12px;flex:1;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#b7d0e2;white-space:pre-wrap;word-break:break-all;min-height:0}
-#log .l-warn{color:var(--warn)}#log .l-err{color:var(--bad)}#log .l-hr{color:var(--accent)}#log .l-ok{color:var(--ok)}#log .l-cmd{color:var(--mute)}
+#log,#nLog{margin:0;padding:10px 12px;flex:1;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#b7d0e2;white-space:pre-wrap;word-break:break-all;min-height:0}
+#log .l-warn,#nLog .l-warn{color:var(--warn)}#log .l-err,#nLog .l-err{color:var(--bad)}#log .l-hr{color:var(--accent)}#log .l-ok,#nLog .l-ok{color:var(--ok)}#log .l-cmd{color:var(--mute)}
 footer{color:var(--mute);font-size:11px;text-align:center}
 [hidden]{display:none!important}
 @media(max-width:720px){.strip{grid-template-columns:1fr 1fr}}
+
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mute);padding:8px 18px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button.sel{color:var(--text);border-bottom-color:var(--accent)}
+.view{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.nodehead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hint{color:var(--mute);font-size:12px;margin-top:2px;max-width:520px}
+.go.small{padding:10px 18px;font-size:14px;white-space:nowrap}
+.progress.big{height:10px;border-radius:5px}
+.nodestats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.nodestats .v{font-size:16px}
+#nodeFill{height:100%;width:0;background:var(--ok);transition:width .6s}

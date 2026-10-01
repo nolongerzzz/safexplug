@@ -30,6 +30,7 @@
     $('donate').value = String(settings.donate);
     $('autostart').checked = settings.autostart;
     $('requireSynced').checked = settings.requireSynced;
+    $('autostartNode').checked = settings.autostartNode;
     renderMode();
   }
   function readForm() {
@@ -42,12 +43,13 @@
       donate: parseInt($('donate').value, 10),
       autostart: $('autostart').checked,
       requireSynced: $('requireSynced').checked,
+      autostartNode: $('autostartNode').checked,
       mode: settings.mode,
     };
   }
   async function save() { settings = await window.safex.setSettings(readForm()); }
 
-  ['address', 'name', 'pool', 'node', 'cpu', 'donate', 'autostart', 'requireSynced'].forEach((id) =>
+  ['address', 'name', 'pool', 'node', 'cpu', 'donate', 'autostart', 'requireSynced', 'autostartNode'].forEach((id) =>
     $(id).addEventListener('change', save));
 
   function setMode(m) { settings.mode = m; save(); renderMode(); }
@@ -147,7 +149,6 @@
     renderStats();
   });
   window.safex.onWaiting((w) => { waiting = w.waiting; renderState(); });
-  window.safex.onNode((n) => { node = n; renderNode(); });
 
   // ---- start / stop -------------------------------------------------------
   $('go').onclick = async () => {
@@ -160,6 +161,89 @@
     if (!r.ok) { err.textContent = r.error; err.hidden = false; }
   };
 
+  // ---- tabs ---------------------------------------------------------------
+  function showTab(name) {
+    const node = name === 'node';
+    $('mineView').hidden = node; $('nodeView').hidden = !node;
+    $('tabBtnMine').className = node ? '' : 'sel'; $('tabBtnNode').className = node ? 'sel' : '';
+    if (node) window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
+  }
+  $('tabBtnMine').onclick = () => showTab('mine');
+  $('tabBtnNode').onclick = () => showTab('node');
+
+  // ---- node panel ---------------------------------------------------------
+  let panel = null;
+  const nLog = $('nLog');
+  function addNodeLog(line) {
+    const div = document.createElement('div');
+    if (/error|failed|could not|did not finish/i.test(line)) div.className = 'l-err';
+    else if (/synced|successfully|is installed|is ready|started/i.test(line)) div.className = 'l-ok';
+    div.textContent = line.replace(/^\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d(?:\.\d+)?\s*/, '');
+    div.title = line;
+    nLog.appendChild(div);
+    while (nLog.childElementCount > MAX_LINES) nLog.removeChild(nLog.firstChild);
+    if ($('nFollow').checked) nLog.scrollTop = nLog.scrollHeight;
+  }
+  $('nClear').onclick = () => { nLog.textContent = ''; };
+  $('nCopy').onclick = async () => {
+    await window.safex.copyText([...nLog.children].map((c) => c.title || c.textContent).join('\n'));
+    const b = $('nCopy'); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1200);
+  };
+
+  // Decide the one thing the user should do next.
+  function nodeNextStep(p) {
+    const d = p.docker;
+    if (p.busy) return { state: p.busy, hint: 'Please wait. You can watch progress below.', btn: null };
+    if (!d.installed) {
+      const linux = p.plan.kind === 'linux-apt';
+      return { state: 'Docker is not installed', action: 'install-docker',
+        btn: linux ? 'Install Docker' : 'Get Docker',
+        hint: linux ? 'One click. You will be asked for your password once.' : 'Opens the Docker download page. Install it, then come back.' };
+    }
+    if (d.engine === 'down') return { state: 'Docker is not running', action: 'start-engine', btn: 'Start Docker',
+      hint: 'On Mac or Windows, open the Docker app instead.' };
+    if (d.engine === 'no-permission') return { state: 'Docker needs access', action: 'start-engine', btn: 'Fix access',
+      hint: 'Asks for your password once to let this app use Docker.' };
+    if (d.container === 'running') return { state: 'Node running', action: 'stop', btn: 'Stop node',
+      hint: 'Stopping saves the chain safely and can take up to two minutes.' };
+    if (d.container === 'restarting') return { state: 'Node is restarting', action: 'stop', btn: 'Stop node', hint: 'It is restarting itself. Check the output below.' };
+    return { state: d.container === 'stopped' ? 'Node stopped' : 'Node not set up', action: 'start', btn: 'Start node',
+      hint: d.image || d.container === 'stopped' ? 'Starts your node and keeps it running across restarts.' : 'First time: builds the node (a few minutes, about 100 MB), then starts it.' };
+  }
+
+  function renderNodePanel() {
+    if (!panel) return;
+    const step = nodeNextStep(panel);
+    $('nodeState').textContent = step.state;
+    $('nodeHint').textContent = step.hint;
+    const b = $('nodeBtn');
+    b.hidden = !step.btn; b.textContent = step.btn || ''; b.dataset.action = step.action || '';
+    b.disabled = !step.btn; b.className = 'go small' + (step.action === 'stop' ? ' active' : '');
+    const running = panel.docker.container === 'running';
+    if (running && node && node.height) {
+      $('nHeight').textContent = node.height.toLocaleString();
+      $('nTarget').textContent = (node.target || node.height).toLocaleString();
+      $('nPeers').textContent = node.peers ?? '—';
+      $('nPct').textContent = node.state === 'synced' ? 'Synced' : node.percent.toFixed(1) + '%';
+      $('nodeFill').style.width = (node.state === 'synced' ? 100 : node.percent) + '%';
+      $('nodeState').textContent = node.state === 'synced' ? 'Node running · synced' : 'Node running · syncing';
+    } else {
+      ['nHeight', 'nTarget', 'nPeers', 'nPct'].forEach((id) => ($(id).textContent = '—'));
+      $('nodeFill').style.width = '0';
+    }
+  }
+  $('nodeBtn').onclick = async () => {
+    const a = $('nodeBtn').dataset.action;
+    if (!a) return;
+    $('nodeBtn').disabled = true;
+    await window.safex.nodeAction(a);
+  };
+  window.safex.onNodePanel((p) => { panel = p; renderNodePanel(); });
+  window.safex.onNodeLog(addNodeLog);
+  // keep the node card live when node status arrives
+  window.safex.onNode((n) => { node = n; renderNode(); renderNodePanel(); });
+
   fillForm();
   renderStats();
+  window.safex.nodeRefresh().then((p) => { panel = p; renderNodePanel(); });
 })();

@@ -1,12 +1,12 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Safex Community Miner",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node test/parser.test.js && node test/miner.test.js",
+    "test": "node test/parser.test.js && node test/miner.test.js && node test/docker.test.js",
     "dist": "electron-builder"
   },
   "keywords": [],

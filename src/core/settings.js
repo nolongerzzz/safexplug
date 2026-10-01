@@ -12,6 +12,7 @@ const DEFAULTS = {
   donate: 1,               // xmrig's own default is 1%
   autostart: false,        // start mining when the app opens
   requireSynced: true,     // solo: wait for a synced node before mining
+  autostartNode: false,    // start the node container when the app opens
 };
 
 class Settings {

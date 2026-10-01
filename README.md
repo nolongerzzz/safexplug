@@ -1,8 +1,16 @@
-# Safex Community Miner 2.1
+# Safex Community Miner 2.2
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
-## What's new in 2.1
+## What's new in 2.2
+
+- **Node tab**: run your own `safexd` node from the app, no terminal. One button does the right next step: **Install Docker** (Linux: one password prompt, does the whole install), **Start Docker**, **Fix access**, then **Start node** (first time it builds the node image, then starts it). Shows height, network height, peers and sync %, with a live node log.
+- Adopts an existing `safex-node` container, so a node that is already synced is never rebuilt or resynced.
+- Safer defaults: node RPC is published on localhost only (only P2P is public), safe database sync, and a 2 minute graceful stop so the chain is never cut off mid-write.
+- Optional "Start node when app opens". Combined with the sync gate in solo mode, the app can bring the node up and start mining once it is synced.
+- Docker on Mac/Windows can't be installed silently: the button opens the Docker Desktop download page.
+
+## What was new in 2.1
 
 - **Live viewport**: the miner's real output, colour-coded, with Follow / Copy / Clear.
 - **Status strip**: status light, hashrate, threads, accepted/rejected shares, blocks found.
@@ -31,8 +39,8 @@ npm run dist       # electron-builder (deb/rpm, nsis, dmg)
 
 ## Roadmap
 
-1. 2.1 standalone miner (this)
-2. Node panel (run `safexd` in Docker, sync progress, gate Start Mining on sync)
+1. 2.1 standalone miner (done)
+2. Node panel (done, 2.2)
 3. Combined view, auto-start on boot, remote-access status
 4. Wallet sync
 5. Local explorer

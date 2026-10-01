@@ -14,6 +14,12 @@
     <div class="cpu"><span id="cpuModel">—</span></div>
   </header>
 
+  <nav class="tabs" role="tablist">
+    <button id="tabBtnMine" role="tab" class="sel">Mine</button>
+    <button id="tabBtnNode" role="tab">Node</button>
+  </nav>
+
+  <div id="mineView" class="view">
   <section class="strip" aria-label="Mining status">
     <div class="tile status"><span id="light" class="light off"></span><div><div class="k">Status</div><div class="v" id="statusText">Stopped</div></div></div>
     <div class="tile"><div class="k">Hashrate</div><div class="v big" id="hashrate">—</div></div>
@@ -87,6 +93,37 @@
     </div>
     <pre id="log" aria-live="off"></pre>
   </section>
+  </div>
+
+  <div id="nodeView" class="view" hidden>
+    <section class="panel">
+      <div class="nodehead">
+        <div>
+          <div class="k">Node (safexd in Docker)</div>
+          <div class="v" id="nodeState">Checking…</div>
+          <div class="hint" id="nodeHint"></div>
+        </div>
+        <button id="nodeBtn" class="go small" disabled>…</button>
+      </div>
+      <div class="progress big" id="nodeBar"><div id="nodeFill"></div></div>
+      <div class="nodestats">
+        <div><div class="k">Height</div><div class="v" id="nHeight">—</div></div>
+        <div><div class="k">Network</div><div class="v" id="nTarget">—</div></div>
+        <div><div class="k">Peers</div><div class="v" id="nPeers">—</div></div>
+        <div><div class="k">Sync</div><div class="v" id="nPct">—</div></div>
+      </div>
+      <label class="check"><input id="autostartNode" type="checkbox"> Start node when app opens</label>
+    </section>
+    <section class="viewport">
+      <div class="vp-head">
+        <span>Node output</span><span class="spacer"></span>
+        <label class="check small"><input id="nFollow" type="checkbox" checked> Follow</label>
+        <button id="nCopy" class="mini">Copy</button>
+        <button id="nClear" class="mini">Clear</button>
+      </div>
+      <pre id="nLog" aria-live="off"></pre>
+    </section>
+  </div>
   <footer id="foot"></footer>
 </div>
 <script src="renderer.js"></script>
