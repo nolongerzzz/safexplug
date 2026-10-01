@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.9.1
+
+- Payments: confirmations are computed from your node's height (the wallet tool reported 0 for old payments).
+
 ## What's new in 2.9
 
 - **Tab bubbles**: a red glowing bubble on Rigs when any rig is offline or hung (answering but not hashing for 2 minutes); a green glowing bubble on Payments when a new block is found (this rig's block counter, or a new payment in the wallet). It clears when you open Payments.

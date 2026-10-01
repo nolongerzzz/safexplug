@@ -26,6 +26,11 @@ const sample = [
     assert.strictEqual(r.last24.count, 2); assert.ok(Math.abs(r.last24.sfx - (4 + 2.5)) < 1e-9);
     assert.strictEqual(W.tally(sample, 0, T0 + 5 * 86400).last24.count, 0);
   });
+  await t('confirmations come from the node height when the wallet reports 0', () => {
+    const r = W.withConfirmations([{ height: 2097581, confirmations: 0 }, { height: 2097520, confirmations: 99 }, { confirmations: 0 }], 2097600);
+    assert.strictEqual(r[0].confirmations, 20); assert.strictEqual(r[1].confirmations, 99); assert.strictEqual(r[2].confirmations, 0);
+    assert.strictEqual(W.withConfirmations([{ height: 5, confirmations: 3 }], 0)[0].confirmations, 3);
+  });
   await t('since 0 counts everything incoming', () => assert.strictEqual(W.tally(sample, 0).count, 4));
   await t('empty / junk input is safe', () => { assert.strictEqual(W.tally(null).count, 0); assert.strictEqual(W.tally([null, 5, {}]).count, 0); });
   let calls = [];

@@ -55,6 +55,13 @@ function tally(transfers, since = 0, now = Math.floor(Date.now() / 1000)) {
   return t;
 }
 
+// The wallet tool can report 0 confirmations for old entries; the node's own height
+// is the better source: confirmations = node height - block height + 1.
+function withConfirmations(list, nodeHeight) {
+  if (!(nodeHeight > 0)) return list;
+  return (list || []).map((r) => (r.height ? { ...r, confirmations: Math.max(r.confirmations || 0, Math.max(0, nodeHeight - r.height + 1)) } : r));
+}
+
 async function summary(hostport, since) {
   const r = await rpc(hostport, 'get_transfers', { in: true, pending: false, pool: false, out: false, failed: false });
   if (!r.ok) return { state: r.error === 'offline' ? 'offline' : r.error === 'login-required' ? 'login' : /method not found/i.test(r.error) ? 'notwallet' : 'error', error: r.error };
@@ -62,4 +69,4 @@ async function summary(hostport, since) {
   return { state: 'ok', since, ...tally(list, since) };
 }
 
-module.exports = { rpc, tally, summary, ATOMIC };
+module.exports = { rpc, tally, summary, withConfirmations, ATOMIC };

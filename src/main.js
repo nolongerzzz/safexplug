@@ -260,6 +260,7 @@ async function pollWallet() {
   const managed = wsetup.status(walletDir()).wallet;
   const since = managed ? 0 : (s.miningSince || 0);
   lastPay = await wallet.summary(s.walletRpc.trim(), since);
+  if (lastPay.state === 'ok') lastPay.recent = wallet.withConfirmations(lastPay.recent, lastNode.height);
   lastPay.miningSince = since; lastPay.managed = managed; lastPay.scanFrom = s.walletScanFrom || 0;
   send('wallet:status', lastPay);
 }
