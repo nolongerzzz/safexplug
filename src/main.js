@@ -9,6 +9,7 @@ const docker = require('./core/docker');
 const rigs = require('./core/rigs');
 const maint = require('./core/maintenance');
 const tailscale = require('./core/tailscale');
+const wallet = require('./core/wallet');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -27,6 +28,8 @@ let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
 let tsCache = { at: 0, status: null };
+let lastPay = null;       // latest payments tally
+let payAt = 0;
 let lastNet = null;       // latest network reading, handed to the window when it loads
 const sendNet = (n) => { lastNet = n; send('net:hashrate', n); };
 
@@ -156,7 +159,10 @@ function startMining(patch) {
   }
   waitingForSync = false;
   send('miner:waiting', { waiting: false });
-  return miner.start(s);
+  const r = miner.start(s);
+  // The payments tally counts from the first time mining actually starts.
+  if (r && r.ok !== false && !settings.get().miningSince) { settings.set({ miningSince: Math.floor(Date.now() / 1000) }); payAt = 0; pollWallet(); }
+  return r;
 }
 
 function pollNode() {
@@ -200,6 +206,16 @@ async function pollRigs() {
     rigRows = rows.map((r) => ({ ...r, ts: tailscale.describe(tsCache.status, r) }));
     send('rigs:status', { rows: rigRows, self: tailscale.describeSelf(tsCache.status) });
   } finally { rigsBusy = false; }
+}
+
+async function pollWallet() {
+  const s = settings.get();
+  if (!s.walletRpc) { lastPay = { state: 'off' }; send('wallet:status', lastPay); return; }
+  if (Date.now() - payAt < 30000) return;
+  payAt = Date.now();
+  lastPay = await wallet.summary(s.walletRpc.trim(), s.miningSince || 0);
+  lastPay.miningSince = s.miningSince || 0;
+  send('wallet:status', lastPay);
 }
 
 function createWindow() {
@@ -273,8 +289,12 @@ app.whenReady().then(() => {
     patch = patch || {};
     // Switching on stats sharing creates the access token the first time.
     if (patch.shareStats && !settings.get().apiToken && !patch.apiToken) patch.apiToken = crypto.randomBytes(16).toString('hex');
-    const s = settings.set(patch); pollNode(); if ('rigs' in patch) pollRigs(); return s;
+    const s = settings.set(patch); pollNode(); if ('rigs' in patch) pollRigs();
+    if ('walletRpc' in patch || 'miningSince' in patch) { payAt = 0; pollWallet(); }
+    return s;
   });
+  ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
+  ipcMain.handle('wallet:restart-count', () => { const s = settings.set({ miningSince: Math.floor(Date.now() / 1000) }); payAt = 0; pollWallet(); return s; });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
   ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice() }; });
   ipcMain.handle('maint:overview', () => maint.overview());
@@ -307,7 +327,7 @@ app.whenReady().then(() => {
   });
 
   createWindow();
-  nodePoll = setInterval(() => { pollNode().then(pollNetwork); pollDocker(); pollRigs(); }, 5000);
+  nodePoll = setInterval(() => { pollNode().then(pollNetwork); pollDocker(); pollRigs(); pollWallet(); }, 5000);
   pollNode().then(pollNetwork);
   pollRigs();
   pollDocker().then(() => {

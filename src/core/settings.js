@@ -18,6 +18,8 @@ const DEFAULTS = {
   shareStats: false,       // expose this miner's stats (token protected) for other rigs
   apiPort: 18080,
   apiToken: '',
+  walletRpc: '',           // host:port of a wallet-rpc on this machine (payments tally)
+  miningSince: 0,          // unix seconds: payments are counted from here (set at first mining start)
   rigs: [],                // other miners to watch: [{name, host, port, token}]
 };
 
@@ -46,6 +48,7 @@ class Settings {
       if (!(k in patch)) continue;
       if (k === 'rigs') { if (Array.isArray(patch.rigs)) clean.rigs = sanitizeRigs(patch.rigs); continue; }
       if (typeof patch[k] !== typeof DEFAULTS[k]) continue;
+      if (k === 'walletRpc' && patch[k] && !/^(127\.0\.0\.1|localhost):\d{2,5}$/.test(patch[k].trim())) continue; // local wallet only
       if (k === 'startDelay' && !(patch[k] >= 0 && patch[k] <= 300)) continue;
       if (k === 'apiPort' && !(Number.isInteger(patch[k]) && patch[k] > 1023 && patch[k] < 65536)) continue;
       clean[k] = patch[k];

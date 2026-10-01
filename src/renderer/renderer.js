@@ -168,16 +168,18 @@
 
   // ---- tabs ---------------------------------------------------------------
   function showTab(name) {
-    for (const t of ['mine', 'node', 'rigs']) {
+    for (const t of ['mine', 'node', 'rigs', 'pay']) {
       $(t + 'View').hidden = t !== name;
       $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
+    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); }
   }
   $('tabBtnMine').onclick = () => showTab('mine');
   $('tabBtnNode').onclick = () => showTab('node');
   $('tabBtnRigs').onclick = () => showTab('rigs');
+  $('tabBtnPay').onclick = () => showTab('pay');
 
   // ---- node panel ---------------------------------------------------------
   let panel = null;
@@ -410,6 +412,45 @@
   // re-render the rigs table when our own stats change
   const _origStats = window.safex.onStats;
   window.safex.onStats(() => { if (!$('rigsView').hidden) renderRigs(); });
+
+  // ---- payments -----------------------------------------------------------
+  const fmtSfx = (v) => (v >= 100 ? v.toFixed(2) : v.toFixed(4)).replace(/\.?0+$/, '') + ' SFX';
+  const fmtWhen = (t) => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  let payNote = '';
+  function renderPay(p) {
+    p = p || { state: 'off' };
+    const msgs = { off: 'Enter the address of your local wallet tool to start the tally.',
+      offline: 'Can\'t reach the wallet tool at that address. Is it running?',
+      login: 'The wallet tool wants a login. Start it with --disable-rpc-login (local only).',
+      error: 'The wallet tool answered with an error: ' + (p.error || ''), ok: 'Connected. Updates every 30 s.' };
+    $('pState').textContent = payNote || msgs[p.state] || '';
+    const ok = p.state === 'ok';
+    $('pTotal').textContent = ok ? fmtSfx(p.sfx) : '—';
+    $('pSince').textContent = p.miningSince ? 'since ' + fmtWhen(p.miningSince) : 'counts from your first mining start';
+    $('pCount').textContent = ok ? String(p.count) : '0';
+    $('pMined').textContent = ok && p.mined ? `${p.mined} mined block${p.mined === 1 ? '' : 's'}` : '';
+    $('pLatest').textContent = ok && p.latest ? fmtWhen(p.latest) : '—';
+    const body = $('pBody'); body.textContent = '';
+    for (const r of ok ? p.recent : []) {
+      const tr = document.createElement('tr');
+      cell(tr, fmtWhen(r.time)); cell(tr, fmtSfx(r.sfx), 'num'); cell(tr, r.type === 'block' ? 'Mined' : 'Received'); cell(tr, String(r.confirmations), 'num');
+      body.appendChild(tr);
+    }
+  }
+  window.safex.onWallet((p) => { renderPay(p); });
+  $('pSave').onclick = async () => {
+    const v = $('pAddr').value.trim();
+    settings = await window.safex.setSettings({ walletRpc: v });
+    payNote = v && settings.walletRpc !== v ? 'The wallet tool must be on this computer, like 127.0.0.1:18082.' : '';
+    if (payNote) $('pState').textContent = payNote;
+  };
+  let resetArmed = null;
+  $('pReset').onclick = async () => {
+    const b = $('pReset');
+    if (!resetArmed) { b.textContent = 'Click again to confirm'; resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Restart count'; }, 4000); return; }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Restart count';
+    settings = await window.safex.walletRestartCount();
+  };
 
   fillForm();
   renderStats();
