@@ -33,6 +33,7 @@
     $('autostart').checked = settings.autostart;
     $('requireSynced').checked = settings.requireSynced;
     $('autostartNode').checked = settings.autostartNode;
+    $('shareNode').checked = !!settings.shareNode;
     renderMode();
   }
   function readForm() {
@@ -53,6 +54,18 @@
 
   ['address', 'name', 'pool', 'node', 'cpu', 'donate', 'autostart', 'requireSynced', 'autostartNode'].forEach((id) =>
     $(id).addEventListener('change', save));
+
+  $('shareNode').addEventListener('change', async () => {
+    settings = await window.safex.setSettings({ shareNode: $('shareNode').checked });
+    if (panel && panel.docker && panel.docker.container !== 'none') {
+      const ok = window.confirm($('shareNode').checked
+        ? 'Open this node to your other devices? The node restarts (up to two minutes). Anyone on your home network or Tailscale could then reach its RPC port. Chain data is not touched.'
+        : 'Close the node to other devices? The node restarts (up to two minutes).');
+      if (!ok) { $('shareNode').checked = !$('shareNode').checked; settings = await window.safex.setSettings({ shareNode: $('shareNode').checked }); return; }
+      await window.safex.nodeAction('reshare');
+      window.safex.nodeRefresh().then(applyRefresh);
+    }
+  });
 
   function setMode(m) { settings.mode = m; save(); renderMode(); }
   $('modePool').onclick = () => !running && setMode('pool');
@@ -400,8 +413,18 @@
       hint: d.image || d.container === 'stopped' ? 'Starts your node and keeps it running across restarts.' : 'First time: builds the node (a few minutes, about 100 MB), then starts it.' };
   }
 
+  function renderShareHint() {
+    const h = $('shareHint'); if (!panel || !panel.docker) { h.hidden = true; return; }
+    const want = !!settings.shareNode, ex = panel.docker.exposure, addrs = (panel.addrs || []);
+    if (!want) { h.hidden = true; return; }
+    h.hidden = false;
+    if (panel.docker.container === 'none') h.textContent = 'Will be open to your other devices the first time the node starts.';
+    else if (ex !== 'lan') h.textContent = 'Not open yet. The node restarts when you confirm the switch.';
+    else h.textContent = addrs.length ? 'On your other computer, use this as the node address: ' + addrs.map((a) => a.ip + ':17402 (' + a.label + ')').join('  or  ') : 'Open to your other devices. Use this computer\'s IP address with port 17402.';
+  }
   function renderNodePanel() {
     if (!panel) return;
+    renderShareHint();
     const step = nodeNextStep(panel);
     $('nodeState').textContent = step.state;
     $('nodeHint').textContent = step.hint;

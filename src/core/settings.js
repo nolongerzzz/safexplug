@@ -12,6 +12,7 @@ const DEFAULTS = {
   donate: 1,               // xmrig's own default is 1%
   autostart: false,        // start mining when the app opens
   requireSynced: true,     // solo: wait for a synced node before mining
+  shareNode: false,        // publish the node's RPC to other devices (home network / Tailscale)
   autostartNode: false,    // start the node container when the app opens
   startDelay: 10,          // seconds to wait before auto-starting the miner on open
   publicFallback: true,    // use the public node for network stats when no local node

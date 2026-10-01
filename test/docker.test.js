@@ -51,6 +51,16 @@ let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
   assert.ok(!/\$USER|\$\(|`/.test(D.LINUX_INSTALL_SCRIPT)); ok('install script takes the user as an argument, no shell interpolation');
   assert.ok(['linux-apt', 'link'].includes(D.installPlan().kind)); ok('install plan resolves for this OS');
 
+  // sharing the node with other devices
+  set('container', 'running'); set('portbind', '127.0.0.1:17402');
+  assert.strictEqual(await D.rpcExposure(), 'local'); ok('exposure: localhost binding reported as local');
+  assert.ok(D.runArgs(true).includes('17402:17402') && !D.runArgs(true).includes('127.0.0.1:17402:17402'));
+  assert.ok(D.runArgs(true).includes('127.0.0.1:17403:17403') && D.runArgs(false).includes('127.0.0.1:17402:17402')); ok('share=true opens only RPC; ZMQ stays local; default stays local');
+  const before2 = calls().length;
+  r = await D.recreateNode(true); assert.ok(r.ok);
+  const seq = calls().slice(before2).map((c) => c.split(' ')[0]); assert.deepStrictEqual(seq.filter((c) => ['stop', 'rm', 'run'].includes(c)), ['stop', 'rm', 'run']); ok('recreate: stop, remove container, run again (volume untouched)');
+  assert.ok(!calls().slice(before2).some((c) => /^volume rm|^volume create/.test(c))); assert.strictEqual(await D.rpcExposure(), 'lan'); ok('node now reachable from other devices');
+  r = await D.recreateNode(false); assert.ok(r.ok); assert.strictEqual(await D.rpcExposure(), 'local'); ok('and can be closed again');
   delete process.env.SAFEX_DOCKER_BIN; process.env.SAFEX_DOCKER_BIN = '/nonexistent/docker';
   s = await D.status(); assert.deepStrictEqual([s.installed, s.engine], [false, 'missing']); ok('no docker CLI -> installed:false, engine:missing');
   console.log(`\n${n} checks passed`);

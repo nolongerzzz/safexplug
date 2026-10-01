@@ -71,24 +71,48 @@ async function status() {
 
 // The run arguments. RPC and ZMQ are published on localhost only; only the
 // P2P port is reachable from outside, so nobody else can query your node.
-function runArgs() {
+// With share=true (the user's "let my other devices use this node" switch) the RPC
+// port is also reachable from the home network / Tailscale. ZMQ always stays local.
+function runArgs(share) {
   return ['run', '-d', '--name', CONTAINER, '--restart', 'unless-stopped',
     '--stop-timeout', String(STOP_SECONDS),
-    '-p', '17401:17401', '-p', '127.0.0.1:17402:17402', '-p', '127.0.0.1:17403:17403',
+    '-p', '17401:17401', '-p', share ? '17402:17402' : '127.0.0.1:17402:17402', '-p', '127.0.0.1:17403:17403',
     '-v', `${VOLUME}:/data`, IMAGE, '--db-sync-mode', 'safe'];
 }
 
-async function startNode() {
+async function startNode(share) {
   const s = await status();
   if (s.engine !== 'ok') return { ok: false, error: 'Docker is not ready.' };
   if (s.container === 'running') return { ok: true, note: 'already running' };
   if (s.container === 'none') {
     if (!s.image) return { ok: false, error: 'The node image has not been built yet.' };
-    const r = await run(runArgs(), { timeout: 60000 });
+    const r = await run(runArgs(!!share), { timeout: 60000 });
     return r.ok ? { ok: true } : { ok: false, error: r.err || 'docker run failed' };
   }
   const r = await run(['start', CONTAINER]);
   return r.ok ? { ok: true } : { ok: false, error: r.err || 'docker start failed' };
+}
+
+// 'lan' = RPC reachable from other devices, 'local' = this computer only, null = no container.
+async function rpcExposure() {
+  const r = await run(['port', CONTAINER, '17402']);
+  if (!r.ok || !r.out.trim()) return null;
+  return r.out.split('\n').some((l) => /^(0\.0\.0\.0|\[::\]):/.test(l.trim())) ? 'lan' : 'local';
+}
+
+// Port bindings are fixed when a container is created, so changing them means
+// removing and re-creating the container. The chain lives in the volume and is not touched.
+async function recreateNode(share) {
+  const s = await status();
+  if (s.engine !== 'ok') return { ok: false, error: 'Docker is not ready.' };
+  if (s.container === 'running' || s.container === 'restarting') {
+    const st = await stopNode(); if (!st.ok) return st;
+  }
+  if (s.container !== 'none') {
+    const rm = await run(['rm', CONTAINER]); if (!rm.ok) return { ok: false, error: rm.err || 'docker rm failed' };
+  }
+  const r = await run(runArgs(!!share), { timeout: 60000 });
+  return r.ok ? { ok: true } : { ok: false, error: r.err || 'docker run failed' };
 }
 
 async function stopNode() {
@@ -176,7 +200,7 @@ const installDockerLinux = () => pkexecScript(LINUX_INSTALL_SCRIPT);
 const startDockerEngineLinux = () => pkexecScript(LINUX_START_SCRIPT);
 
 module.exports = {
-  run, Streamer, CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode,
+  run, Streamer, CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode, rpcExposure, recreateNode,
   buildImage, followLogs, installPlan, installDockerLinux, startDockerEngineLinux,
   LINUX_INSTALL_SCRIPT, LINUX_START_SCRIPT,
 };

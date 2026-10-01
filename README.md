@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.6
+
+- **Let my other devices use this node.** New switch on the Node tab. Off by default. When on, the node's RPC port (17402) is also reachable from your home network or Tailscale (the node restarts; chain data is not touched), and the Node tab shows the address to type on the other computer. Use it as the "node address" in My node (solo) mode on a Mac or any other rig. Anyone on that network could reach the RPC port, so only use it on a network you trust. ZMQ stays local.
+
 ## What's new in 3.0.5
 
 - **Mac builds now use xmrig 6.26.0** (Intel and Apple Silicon), the same version as Linux, so solo mining works on a Mac. Before, the Mac copy was 6.16.2, which the Safex node rejects.

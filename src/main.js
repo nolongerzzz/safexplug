@@ -60,7 +60,7 @@ function nodeLog(text) {
 }
 
 function sendPanel() {
-  send('node:panel', { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan() });
+  send('node:panel', { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), addrs: shareAddrs() });
 }
 function manageLogs() {
   const want = dockerStatus.container === 'running' || dockerStatus.container === 'restarting';
@@ -70,9 +70,19 @@ function manageLogs() {
     logStream.on('exit', () => { logStream = null; });
   } else if (!want && logStream) { logStream.stop(); logStream = null; }
 }
+// Addresses another device can use to reach this node (home network and Tailscale).
+function shareAddrs() {
+  const out = [];
+  for (const [name, list] of Object.entries(os.networkInterfaces())) for (const a of list || []) {
+    if (a.family !== 'IPv4' || a.internal || /^(docker|br-|veth|virbr)/.test(name)) continue;
+    out.push({ ip: a.address, label: /^100\./.test(a.address) || /tailscale/i.test(name) ? 'Tailscale' : 'Home network' });
+  }
+  return out;
+}
 async function pollDocker() {
   if (nodeBusy) { sendPanel(); return; }
   dockerStatus = await docker.status();
+  dockerStatus.exposure = dockerStatus.container === 'none' ? null : await docker.rpcExposure();
   manageLogs();
   sendPanel();
 }
@@ -115,7 +125,7 @@ async function nodeAction(action) {
           if (code !== 0) { note('Build failed. See the lines above.'); break; }
         }
         nodeBusy = 'Starting node…'; sendPanel();
-        const r = await docker.startNode();
+        const r = await docker.startNode(settings.get().shareNode);
         nodeBusy = null;
         if (!r.ok) note('Could not start node: ' + r.error);
         break;
@@ -126,6 +136,15 @@ async function nodeAction(action) {
         const r = await docker.stopNode();
         nodeBusy = null;
         if (!r.ok) note('Could not stop node: ' + r.error);
+        break;
+      }
+      case 'reshare': {
+        const share = settings.get().shareNode;
+        note(share ? 'Opening the node to your other devices. Restarting it; this can take up to two minutes. Chain data is not touched.' : 'Closing the node to other devices. Restarting it; this can take up to two minutes.');
+        nodeBusy = 'Restarting node…'; sendPanel();
+        const r = await docker.recreateNode(share);
+        nodeBusy = null;
+        note(r.ok ? (share ? 'Done. Other devices can use this node.' : 'Done. Only this computer can use the node.') : 'Could not restart the node: ' + r.error);
         break;
       }
       default: return { ok: false, error: 'Unknown action' };
@@ -397,7 +416,7 @@ app.whenReady().then(() => {
   ipcMain.handle('explorer:tx', (_e, hash) => exploreCall((h) => explorer.tx(h, String(hash || ''))));
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
-  ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice() }; });
+  ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice(), addrs: shareAddrs() }; });
   ipcMain.handle('maint:overview', () => maint.overview());
   ipcMain.handle('maint:run', async (_e, kind) => {
     if (!['health', 'backup', 'restore'].includes(kind)) return { ok: false, error: 'Unknown action' };
