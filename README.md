@@ -2,13 +2,18 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 2.6.2
+
+- Status tile reads "Starting…" during the start delay (hover for the seconds left) so it no longer spills out of its box.
+- Payments hint now includes `--daemon-address 127.0.0.1:17402` so the wallet reads from your own node.
+
 ## What's new in 2.6.1
 
 - Rigs tab: a green ✓ / red ✗ / amber ! box on every rig, and the Rigs tab itself turns red with a count ("Rigs ✗ 2") when any rig stops answering. The Tailscale line stays underneath as a hint about *why*.
 
 ## What's new in 2.6
 
-- **Payments tab**: a rolling tally of payments received since mining began (count, mined blocks, latest, recent list). It reads incoming transfers from `safex-wallet-rpc` running on this computer, so the app never sees seeds or keys. The tally starts at your first mining start; "Restart count" resets it. Start the wallet with `--rpc-bind-ip 127.0.0.1 --disable-rpc-login`.
+- **Payments tab**: a rolling tally of payments received since mining began (count, mined blocks, latest, recent list). It reads incoming transfers from `safex-wallet-rpc` running on this computer, so the app never sees seeds or keys. The tally starts at your first mining start; "Restart count" resets it. Start the wallet with `--rpc-bind-ip 127.0.0.1 --disable-rpc-login --daemon-address 127.0.0.1:17402` (its node).
 
 ## What's new in 2.5
 

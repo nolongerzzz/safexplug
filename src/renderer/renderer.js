@@ -13,7 +13,7 @@
   const init = await window.safex.init();
   let settings = init.settings;
   let running = init.running;
-  let waiting = false;
+  let waiting = false, waitSecs = 0;
   let waitText = '';
   let node = { state: 'unknown' };
   let stats = {};
@@ -90,13 +90,13 @@
   function renderState() {
     const go = $('go');
     let light = 'off', text = 'Stopped';
-    if (waiting) { light = 'wait'; text = waitText || 'Waiting for node to sync'; }
+    if (waiting) { light = 'wait'; text = waitText || 'Waiting for sync'; }
     else if (running) {
       if (stats.connected) { light = 'on'; text = 'Mining'; }
       else { light = 'wait'; text = 'Connecting…'; }
     }
     $('light').className = 'light ' + light;
-    $('statusText').textContent = text;
+    $('statusText').textContent = text; $('statusText').title = waiting && waitSecs ? `Mining starts in ${waitSecs}s` : '';
     go.textContent = running || waiting ? 'Stop mining' : 'Start mining';
     go.className = 'go' + (running || waiting ? ' active' : '');
     const lock = running || waiting;
@@ -153,7 +153,7 @@
     }
     renderStats();
   });
-  window.safex.onWaiting((w) => { waiting = w.waiting; waitText = w.text || ''; renderState(); });
+  window.safex.onWaiting((w) => { waiting = w.waiting; waitText = w.text || ''; waitSecs = w.seconds || 0; renderState(); });
 
   // ---- start / stop -------------------------------------------------------
   $('go').onclick = async () => {

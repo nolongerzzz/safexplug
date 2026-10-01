@@ -140,7 +140,7 @@ function cancelAutostart() {
 function beginAutostart() {
   let n = Math.round(settings.get().startDelay);
   if (n <= 0) { startMining(); return; }
-  const tick = () => send('miner:waiting', { waiting: true, text: `Starting in ${n}s…` });
+  const tick = () => send('miner:waiting', { waiting: true, text: 'Starting…', seconds: n });
   tick();
   autoTimer = setInterval(() => {
     n -= 1;
