@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.3
+
+- Fixed the full-speed launcher: it used `sudo -E`, which the passwordless rule does not allow ("not allowed to preserve the environment"). The rule already keeps the screen variables, so `-E` is gone.
+
 ## What's new in 3.0.2
 
 - **Full-speed launcher (Linux).** `tools/install-root-launcher.sh` (run once as your normal user, it asks your password once) sets up a menu entry "Safex Community Miner (full speed)" and login autostart that start the miner with root so CPU tuning (MSR) applies. No terminal, no password prompt afterwards. It also loads the `msr` module at boot and keeps 1280 huge pages. It sets aside any older login entry for the app. The passwordless rule covers only one fixed, root-owned script that takes no arguments.

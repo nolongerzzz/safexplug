@@ -44,7 +44,7 @@ $SUDO install -o root -g root -m 0440 "$TMP" "$SUDOERS"
 cat > "$TMP" <<LAUNCH
 #!/bin/bash
 xhost +SI:localuser:root >/dev/null 2>&1 || true
-exec sudo -n -E /usr/local/bin/safex-miner-root
+exec sudo -n /usr/local/bin/safex-miner-root
 LAUNCH
 $SUDO install -o root -g root -m 0755 "$TMP" "$USER_BIN"
 rm -f "$TMP"
