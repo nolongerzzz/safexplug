@@ -186,14 +186,26 @@
       <div class="tile"><div class="k">Payments</div><div class="v" id="pCount">0</div><div class="sub" id="pMined"></div></div>
       <div class="tile"><div class="k">Latest</div><div class="v" id="pLatest">—</div></div>
     </section>
+    <section class="panel" id="wsPanel">
+      <div class="vp-head"><span>Set up a view-only wallet</span></div>
+      <div class="hint" id="wsIntro">Uses the official Safex wallet tool, in view-only mode: it can see payments coming in but can never spend. You will paste your address and private <b>view</b> key once, into the wallet tool's own window, never into this app. Never use your seed or spend key.</div>
+      <div class="row">
+        <button id="wsDl" class="mini big">1. Download wallet tools</button>
+        <label class="grow">Scan from block<input id="wsHeight" type="text" inputmode="numeric" spellcheck="false" placeholder="e.g. 2090000"></label>
+        <button id="wsAdd" class="mini big">2. Add my wallet</button>
+        <button id="wsRemove" class="mini" hidden>Remove</button>
+      </div>
+      <div class="hint" id="wsState"></div>
+      <pre id="wsLog" class="smalllog" hidden></pre>
+    </section>
     <section class="panel">
       <div class="row">
-        <label class="grow">Wallet tool address (this computer)<input id="pAddr" type="text" spellcheck="false" placeholder="127.0.0.1:18082"></label>
+        <label class="grow">Wallet tool address (filled in for you)<input id="pAddr" type="text" spellcheck="false" placeholder="127.0.0.1:18082"></label>
         <button id="pSave" class="mini big">Connect</button>
         <button id="pReset" class="mini big" title="Start the tally from now">Restart count</button>
       </div>
       <div id="pState" class="hint"></div>
-      <div class="hint">Only your wallet's incoming payments are read. This app never asks for or stores your seed or keys; they stay inside the wallet. Start the wallet with <code>safex-wallet-rpc --wallet-file YOURWALLET --rpc-bind-ip 127.0.0.1 --rpc-bind-port 18082 --disable-rpc-login --daemon-address 127.0.0.1:17402</code>.</div>
+      <div class="hint">Only your wallet's incoming payments are read. This app never asks for or stores your seed or keys.</div>
       <table class="rigtable"><thead><tr><th>When</th><th>Amount</th><th>Type</th><th>Confirmations</th></tr></thead><tbody id="pBody"></tbody></table>
     </section>
   </div>

@@ -174,7 +174,7 @@
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
-    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); }
+    if (name === 'pay') { $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); }
   }
   $('tabBtnMine').onclick = () => showTab('mine');
   $('tabBtnNode').onclick = () => showTab('node');
@@ -463,6 +463,41 @@
     clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Restart count';
     settings = await window.safex.walletRestartCount();
   };
+
+  // ---- wallet setup (view-only, official wallet tools) -----------------------
+  let ws = null; const wsLog = $('wsLog');
+  function renderWs() {
+    if (!ws) return;
+    const st = $('wsState');
+    $('wsRemove').hidden = !ws.wallet; $('wsPanel').classList.toggle('done', !!ws.wallet); if (ws.wallet) wsLog.hidden = true;
+    $('wsDl').disabled = ws.busy || ws.tools || !ws.supported;
+    $('wsDl').textContent = ws.tools ? '1. Wallet tools ready ✓' : ws.busy ? 'Downloading…' : '1. Download wallet tools';
+    $('wsAdd').disabled = !ws.tools || ws.wallet || !ws.terminal;
+    $('wsAdd').textContent = ws.wallet ? '2. Wallet added ✓' : '2. Add my wallet';
+    if (!$('wsHeight').value && ws.nodeHeight) $('wsHeight').placeholder = 'e.g. ' + Math.max(0, ws.nodeHeight - 5000);
+    let msg;
+    if (!ws.supported) msg = 'The one-click wallet tools are Linux-only for now. On this system, run the official safex-wallet-rpc yourself and enter its address below.';
+    else if (!ws.tools) msg = 'Step 1: download the official wallet tools (checked against the release checksums).';
+    else if (!ws.wallet) msg = ws.terminal ? 'Step 2: click "Add my wallet". A window opens; paste your address, then your private view key, there. "Scan from block" is where to start looking for payments (about when you started mining; earlier is safe but slower).' : 'No terminal program was found to open the wallet tool window.';
+    else msg = ws.running ? 'Wallet tool is running and reading your node. It will catch up with the chain first, so the tally can lag until it has scanned.' : 'Wallet is set up. The wallet tool starts once your node answers.';
+    st.textContent = msg;
+  }
+  const loadWs = () => window.safex.wsStatus().then((x) => { ws = x; renderWs(); });
+  window.safex.onWsLog((l) => { wsLog.hidden = false; wsLog.textContent += l + '\n'; wsLog.scrollTop = wsLog.scrollHeight; });
+  $('wsDl').onclick = async () => {
+    wsLog.textContent = ''; ws.busy = true; renderWs();
+    const r = await window.safex.wsDownload();
+    if (!r.ok) { wsLog.hidden = false; wsLog.textContent += 'Stopped: ' + r.error + '\n'; }
+    loadWs();
+  };
+  $('wsAdd').onclick = async () => {
+    const h = $('wsHeight').value.trim();
+    if (h && !/^\d{1,9}$/.test(h)) { $('wsState').textContent = 'Scan-from block should be a number.'; return; }
+    const r = await window.safex.wsAdd({ height: h ? parseInt(h, 10) : Math.max(0, (ws.nodeHeight || 0) - 5000) });
+    $('wsState').textContent = r.ok ? 'The wallet window is open. Paste your address, then your private view key, there. This page updates when it is done.' : r.error;
+  };
+  $('wsRemove').onclick = async () => { await window.safex.wsRemove(); loadWs(); };
+  setInterval(() => { if (!$('payView').hidden) loadWs(); }, 3000);
 
   fillForm();
   renderStats();

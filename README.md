@@ -1,6 +1,11 @@
-# Safex Community Miner 2.6
+# Safex Community Miner 2.7
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
+
+## What's new in 2.7
+
+- **Payments tab can set up its own view-only wallet (Linux)**: "Download wallet tools" fetches the official safexcore 7.0.3 `safex-wallet-cli` / `safex-wallet-rpc` and verifies them against the release SHA256SUMS. "Add my wallet" opens the wallet tool's own terminal window where you paste your address and private view key once (the app never sees them; seed and spend key are never needed). The app then runs `safex-wallet-rpc` on 127.0.0.1 against your node and fills in the Payments address by itself.
+- Note: `--restricted-rpc` is NOT used because it blocks `get_transfers`; the wallet is view-only, so it cannot spend either way.
 
 ## What's new in 2.6.2
 

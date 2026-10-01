@@ -10,6 +10,7 @@ const rigs = require('./core/rigs');
 const maint = require('./core/maintenance');
 const tailscale = require('./core/tailscale');
 const wallet = require('./core/wallet');
+const wsetup = require('./core/walletsetup');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -28,6 +29,9 @@ let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
 let tsCache = { at: 0, status: null };
+let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
+let rpcTry = 0;
+let wsBusy = false;
 let lastPay = null;       // latest payments tally
 let payAt = 0;
 let lastNet = null;       // latest network reading, handed to the window when it loads
@@ -208,7 +212,21 @@ async function pollRigs() {
   } finally { rigsBusy = false; }
 }
 
+const walletDir = () => path.join(app.getPath('userData'), 'wallet');
+const walletNode = () => { const s = settings.get(); return s.mode === 'solo' ? s.node : '127.0.0.1:17402'; };
+// Keep the wallet tool running whenever a wallet has been set up. It exits if
+// its node is down, so retry at most every 30 s and only when the node answers.
+function ensureWalletRpc() {
+  if (!walletRpc || walletRpc.running) return;
+  const st = wsetup.status(walletDir());
+  if (!st.supported || !st.tools || !st.wallet) return;
+  if (lastNode.state === 'offline' || lastNode.state === 'unknown' || Date.now() - rpcTry < 30000) return;
+  rpcTry = Date.now();
+  const r = walletRpc.start(walletNode());
+  if (r.ok && !settings.get().walletRpc) { settings.set({ walletRpc: `127.0.0.1:${wsetup.RPC_PORT}` }); payAt = 0; }
+}
 async function pollWallet() {
+  ensureWalletRpc();
   const s = settings.get();
   if (!s.walletRpc) { lastPay = { state: 'off' }; send('wallet:status', lastPay); return; }
   if (Date.now() - payAt < 30000) return;
@@ -293,6 +311,22 @@ app.whenReady().then(() => {
     if ('walletRpc' in patch || 'miningSince' in patch) { payAt = 0; pollWallet(); }
     return s;
   });
+  walletRpc = new wsetup.WalletRpc(walletDir());
+  const wsStatus = () => ({ ...wsetup.status(walletDir()), running: walletRpc.running, busy: wsBusy, terminal: !!wsetup.findTerminal(), nodeHeight: lastNode.height || 0 });
+  ipcMain.handle('wsetup:status', () => wsStatus());
+  ipcMain.handle('wsetup:download', async () => {
+    if (wsBusy) return { ok: false, error: 'Busy' };
+    wsBusy = true;
+    try { return await wsetup.download(walletDir(), (l) => send('wsetup:log', l)); } finally { wsBusy = false; }
+  });
+  ipcMain.handle('wsetup:add', (_e, o) => wsetup.addWallet(walletDir(), { node: walletNode(), height: Math.max(0, Math.floor(Number(o && o.height) || 0)) }));
+  ipcMain.handle('wsetup:remove', async () => {
+    const c = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Cancel', 'Remove view-only wallet'], defaultId: 0, cancelId: 0,
+      title: 'Remove wallet', message: 'Remove the view-only wallet from this app?', detail: 'This deletes only the view-only copy kept by this app. Your real wallet is not touched.' });
+    if (c.response !== 1) return { ok: false, cancelled: true };
+    walletRpc.stop(); await new Promise((r) => setTimeout(r, 500)); wsetup.removeWallet(walletDir());
+    settings.set({ walletRpc: '' }); payAt = 0; pollWallet(); return { ok: true };
+  });
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
   ipcMain.handle('wallet:restart-count', () => { const s = settings.set({ miningSince: Math.floor(Date.now() / 1000) }); payAt = 0; pollWallet(); return s; });
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
@@ -344,5 +378,5 @@ app.whenReady().then(() => {
 });
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-app.on('before-quit', () => { clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
+app.on('before-quit', () => { if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

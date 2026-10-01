@@ -96,3 +96,8 @@ input[readonly]{opacity:.85}
 #statusText{font-size:15px}
 .tile.status{gap:8px;padding:8px 10px}
 #statusText{font-size:14px}
+
+.smalllog{margin:6px 0 0;max-height:110px;overflow:auto;background:#07121d;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;white-space:pre-wrap}
+#payView{overflow-y:auto}
+#wsPanel.done .row>*:not(#wsRemove),#wsPanel.done #wsIntro,#wsPanel.done .vp-head{display:none}
+#wsPanel.done .row{justify-content:flex-end}

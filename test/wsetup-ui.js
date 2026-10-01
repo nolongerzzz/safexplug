@@ -1,0 +1,33 @@
+// Dev-only: wallet setup panel in the real app (fake release server + fake terminal).
+const { app, BrowserWindow } = require('electron');
+const http = require('http'), fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
+app.commandLine.appendSwitch('no-sandbox'); app.commandLine.appendSwitch('disable-gpu');
+const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'sxwu-')); app.setPath('userData', ud);
+const V = '7.0.3', CLI = `safex-wallet-cli-linux-${V}`, RPC = `safex-wallet-rpc-linux-${V}`;
+const files = { [CLI]: Buffer.from('#!/bin/sh\nexit 0\n'.repeat(20000)), [RPC]: Buffer.from('#!/bin/sh\nsleep 600\n'.repeat(20000)) };
+const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
+const srv = http.createServer((q, r) => { const n = q.url.split('/').pop(); if (n === 'SHA256SUMS') return r.end(Object.entries(files).map(([k, v]) => `${sha(v)}  ${k}`).join('\n') + '\n'); if (files[n]) return r.end(files[n]); r.statusCode = 404; r.end(); }).listen(18999, '127.0.0.1');
+process.env.SAFEX_RELEASE_BASE = 'http://127.0.0.1:18999';
+const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'sxbin-')); fs.writeFileSync(path.join(bin, 'xterm'), `#!/bin/sh\necho "$@" > ${bin}/called\n`, { mode: 0o755 });
+process.env.PATH = bin + ':' + process.env.PATH;
+fs.writeFileSync(path.join(ud, 'settings.json'), JSON.stringify({ mode: 'solo', publicFallback: false }));
+http.createServer((q, r) => r.end(JSON.stringify({ height: 2097365, target_height: 2097364, outgoing_connections_count: 8, incoming_connections_count: 1, difficulty: 27960000, target: 120 }))).listen(17402, '127.0.0.1');
+require('../src/main.js');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+app.whenReady().then(async () => {
+  const wc = BrowserWindow.getAllWindows()[0].webContents; const OUT = process.env.SHOT_DIR; const js = (c) => wc.executeJavaScript(c);
+  const g = (id) => js(`document.getElementById('${id}').textContent`);
+  await wait(2500); await js(`document.getElementById('tabBtnPay').click()`); await wait(800);
+  console.log('start      :', await g('wsDl'), '|', await g('wsAdd'), '|', await g('wsState'));
+  await js(`document.getElementById('wsDl').click()`); await wait(2500);
+  console.log('downloaded :', await g('wsDl'), '|', await g('wsAdd'), '|', JSON.stringify((await g('wsLog')).split('\n').slice(-3)));
+  await js(`document.getElementById('wsHeight').value='2090000';document.getElementById('wsAdd').click()`); await wait(1000);
+  console.log('add clicked:', await g('wsState'), '| terminal got:', fs.readFileSync(path.join(bin, 'called'), 'utf8').trim().replace(ud, '<ud>'));
+  const script = fs.readFileSync(path.join(ud, 'wallet', 'add-wallet.sh'), 'utf8').split('\n').find((l) => /generate-from-view-key/.test(l));
+  console.log('runner line:', script.replace(ud, '<ud>'));
+  fs.writeFileSync(path.join(ud, 'wallet', 'view.keys'), 'fake'); await wait(3500);
+  console.log('wallet made:', await g('wsAdd'), '|', await g('wsState'), '| remove visible:', await js(`!document.getElementById('wsRemove').hidden`));
+  fs.writeFileSync(path.join(OUT, 'ws.png'), (await wc.capturePage()).toPNG());
+  await wait(6000); console.log('walletRpc setting:', JSON.stringify(JSON.parse(fs.readFileSync(path.join(ud, 'settings.json'), 'utf8')).walletRpc));
+  app.exit(0);
+});
