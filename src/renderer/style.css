@@ -86,3 +86,8 @@ input[readonly]{opacity:.85}
 .tile .v{font-size:16px}.tile .v.big{font-size:19px}
 .rigtable .tsline{font-size:11px;margin-top:2px;white-space:normal;max-width:300px;line-height:1.25}
 .ts-ok{color:var(--ok)}.ts-warn{color:var(--warn)}.ts-bad{color:var(--bad)}.ts-dim{color:var(--mute)}
+
+.rigtable .rname{display:flex;align-items:center;gap:8px;font-weight:600}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;font-size:14px;font-weight:700;flex:none;color:#06121f}
+.mark-ok{background:var(--ok)}.mark-bad{background:var(--bad);color:#fff}.mark-warn{background:var(--warn)}
+.tabs button.alert{color:var(--bad)}

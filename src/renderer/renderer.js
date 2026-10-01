@@ -354,26 +354,37 @@
   let selfTs = null;
   const fmtUp = (s) => { if (!s) return '—'; const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
   const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
-  function nameCell(tr, name, line) {
+  // ✓ green = answering and hashing, ✗ red = down, ! amber = answering but not hashing / needs attention
+  const MARK = { ok: ['✓', 'Mining'], bad: ['✗', 'Not responding'], warn: ['!', 'Needs a look'] };
+  function nameCell(tr, name, line, mark) {
     const td = document.createElement('td');
-    const a = document.createElement('div'); a.textContent = name; td.appendChild(a);
+    const a = document.createElement('div'); a.className = 'rname';
+    if (mark) { const m = document.createElement('span'); m.className = 'mark mark-' + mark; m.textContent = MARK[mark][0]; m.title = MARK[mark][1]; a.appendChild(m); }
+    a.appendChild(document.createTextNode(name)); td.appendChild(a);
     if (line) { const b = document.createElement('div'); b.className = 'tsline ts-' + line.level; b.textContent = line.text; td.appendChild(b); }
     tr.appendChild(td);
   }
   function pill(td, text, cls) { const sp = document.createElement('span'); sp.className = 'pill ' + cls; sp.textContent = text; td.appendChild(sp); }
 
+  function setRigBadge(n) {
+    const b = $('tabBtnRigs'); b.textContent = n ? `Rigs ✗ ${n}` : 'Rigs';
+    b.classList.toggle('alert', n > 0);
+  }
   function renderRigs() {
     const body = $('rigBody'); body.textContent = '';
     // this machine
     const me = document.createElement('tr'); me.className = 'me';
-    nameCell(me, 'This machine', selfTs); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
+    nameCell(me, 'This machine', selfTs, running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
     cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); cell(me, stats.threads ?? '—', 'num');
     cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
     body.appendChild(me);
     let hs = running ? (stats.hashrate || 0) : 0, acc = running ? (stats.accepted || 0) : 0, rej = running ? (stats.rejected || 0) : 0, online = running && stats.connected ? 1 : 0;
+    let downCount = 0;
     rigRows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      nameCell(tr, r.name, r.ts);
+      const mk = !r.online ? 'bad' : (r.otherWallet || !(r.hashrate > 0)) ? 'warn' : 'ok';
+      downCount += mk === 'bad' ? 1 : 0;
+      nameCell(tr, r.name, r.ts, mk);
       const td = cell(tr, '');
       if (!r.online) pill(td, r.reason === 'auth' ? 'wrong token' : 'offline', 'off');
       else if (r.otherWallet) pill(td, 'other wallet', 'warn');
@@ -385,13 +396,14 @@
       x.appendChild(b); body.appendChild(tr);
       if (r.online && !r.otherWallet) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
     });
+    setRigBadge(downCount);
     { const e = expectedParts(hs || null); $('cExp').textContent = e.time; $('cExpSub').textContent = e.sub; }
     $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = `${acc} / ${rej}`;
     $('shareStats').checked = settings.shareStats;
     $('shareInfo').hidden = !settings.shareStats;
     if (settings.shareStats) { $('myAddr').value = `${init.lanAddress || 'this-machine'}:${settings.apiPort}`; $('myToken').value = settings.apiToken; }
   }
-  window.safex.onRigs((p) => { rigRows = p.rows || []; selfTs = p.self || null; if (!$('rigsView').hidden) renderRigs(); });
+  window.safex.onRigs((p) => { rigRows = p.rows || []; selfTs = p.self || null; setRigBadge(rigRows.filter((r) => !r.online).length); if (!$('rigsView').hidden) renderRigs(); });
 
   $('rAdd').onclick = async () => {
     const err = $('rErr'); err.hidden = true;
