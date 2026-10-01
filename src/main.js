@@ -287,7 +287,7 @@ async function pollWallet() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 880, height: 760, minWidth: 640, minHeight: 600,
+    width: 880, height: 760, minWidth: 480, minHeight: 360,
     backgroundColor: '#0d1b2a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

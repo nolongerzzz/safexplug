@@ -47,7 +47,9 @@ footer{color:var(--mute);font-size:11px;text-align:center}
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
 .tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mute);padding:8px 18px;font:inherit;font-weight:600;cursor:pointer}
 .tabs button.sel{color:var(--text);border-bottom-color:var(--accent)}
-.view{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.view{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+.view > *{flex-shrink:0}
+.view > .viewport{flex:1 0 auto;min-height:170px}
 .nodehead{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .hint{color:var(--mute);font-size:12px;margin-top:2px;max-width:520px}
 .go.small{padding:10px 18px;font-size:14px;white-space:nowrap}
@@ -148,3 +150,6 @@ input[readonly]{opacity:.85}
 /* warning banner eases in and out instead of pushing the page down in one jump */
 .banner{overflow:hidden;max-height:0;opacity:0;padding-top:0;padding-bottom:0;border-width:0;margin:-12px 0 0;transition:max-height .6s ease,opacity .6s ease,padding .6s ease,margin .6s ease,border-width .6s ease}
 .banner.on{margin:0;max-height:140px;opacity:1;padding-top:8px;padding-bottom:8px;border-width:1px}
+/* small screens (7-inch panels): tabs shrink and scroll instead of overflowing */
+.tabs{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+@media(max-width:760px){.tabs button{padding:8px 10px}.app{padding:10px 10px 6px}}
