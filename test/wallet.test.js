@@ -38,6 +38,11 @@ const sample = [
     assert.strictEqual(calls[0].method, 'get_transfers'); assert.strictEqual(calls[0].params.in, true); assert.strictEqual(calls[0].params.out, false);
   });
   srv.close();
+  await t('pointing at the node (no such method) is recognised as the wrong address', async () => {
+    const node = http.createServer((q, r) => { q.resume(); r.end(JSON.stringify({ jsonrpc: '2.0', id: '0', error: { code: -32601, message: 'Method not found' } })); }).listen(0, '127.0.0.1');
+    await new Promise((x) => node.on('listening', x));
+    assert.strictEqual((await W.summary('127.0.0.1:' + node.address().port, 0)).state, 'notwallet'); node.close();
+  });
   await t('wallet not running -> offline', async () => assert.strictEqual((await W.summary(addr, 0)).state, 'offline'));
   await t('bad address -> error, no crash', async () => assert.strictEqual((await W.summary('nonsense', 0)).state, 'error'));
   console.log(n + ' tests passed');

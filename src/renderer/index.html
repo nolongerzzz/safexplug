@@ -198,9 +198,10 @@
       <div class="hint" id="wsState"></div>
       <pre id="wsLog" class="smalllog" hidden></pre>
     </section>
-    <section class="panel">
+    <section class="panel" id="manualWallet">
+      <div class="hint"><b>Advanced:</b> only needed if you run the wallet tool yourself. This is the <b>wallet tool's</b> address (normally 127.0.0.1:18082), <b>not</b> your node's (17402).</div>
       <div class="row">
-        <label class="grow">Wallet tool address (filled in for you)<input id="pAddr" type="text" spellcheck="false" placeholder="127.0.0.1:18082"></label>
+        <label class="grow">Wallet tool address<input id="pAddr" type="text" spellcheck="false" placeholder="127.0.0.1:18082"></label>
         <button id="pSave" class="mini big">Connect</button>
         <button id="pReset" class="mini big" title="Start the tally from now">Restart count</button>
       </div>

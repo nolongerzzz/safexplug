@@ -55,7 +55,7 @@ function tally(transfers, since = 0) {
 
 async function summary(hostport, since) {
   const r = await rpc(hostport, 'get_transfers', { in: true, pending: false, pool: false, out: false, failed: false });
-  if (!r.ok) return { state: r.error === 'offline' ? 'offline' : r.error === 'login-required' ? 'login' : 'error', error: r.error };
+  if (!r.ok) return { state: r.error === 'offline' ? 'offline' : r.error === 'login-required' ? 'login' : /method not found/i.test(r.error) ? 'notwallet' : 'error', error: r.error };
   const list = [].concat(r.result.in || [], r.result.block || []);
   return { state: 'ok', since, ...tally(list, since) };
 }

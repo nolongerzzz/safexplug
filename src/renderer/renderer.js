@@ -433,6 +433,7 @@
     p = p || { state: 'off' };
     const msgs = { off: 'Enter the address of your local wallet tool to start the tally.',
       offline: 'Can\'t reach the wallet tool at that address. Is it running?',
+      notwallet: 'That address answered, but it is not a wallet tool. 127.0.0.1:17402 is your NODE. The wallet tool is 127.0.0.1:18082.',
       login: 'The wallet tool wants a login. Start it with --disable-rpc-login (local only).',
       error: 'The wallet tool answered with an error: ' + (p.error || ''), ok: 'Connected. Updates every 30 s.' };
     $('pState').textContent = payNote || msgs[p.state] || '';
@@ -469,6 +470,7 @@
   function renderWs() {
     if (!ws) return;
     const st = $('wsState');
+    $('manualWallet').hidden = !!ws.wallet && ws.running;
     $('wsRemove').hidden = !ws.wallet; $('wsPanel').classList.toggle('done', !!ws.wallet); if (ws.wallet) wsLog.hidden = true;
     $('wsDl').disabled = ws.busy || ws.tools || !ws.supported;
     $('wsDl').textContent = ws.tools ? '1. Wallet tools ready ✓' : ws.busy ? 'Downloading…' : '1. Download wallet tools';

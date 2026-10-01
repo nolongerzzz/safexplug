@@ -227,6 +227,11 @@ function ensureWalletRpc() {
 }
 async function pollWallet() {
   ensureWalletRpc();
+  // With the app-managed wallet, the address is always the wallet tool's own port
+  // (never the node's), whatever was typed into the box before.
+  if (walletRpc && wsetup.status(walletDir()).wallet && settings.get().walletRpc !== `127.0.0.1:${wsetup.RPC_PORT}`) {
+    settings.set({ walletRpc: `127.0.0.1:${wsetup.RPC_PORT}` }); payAt = 0;
+  }
   const s = settings.get();
   if (!s.walletRpc) { lastPay = { state: 'off' }; send('wallet:status', lastPay); return; }
   if (Date.now() - payAt < 30000) return;
