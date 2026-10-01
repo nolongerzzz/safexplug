@@ -59,3 +59,22 @@ let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
   console.log(`\n${n} checks passed`);
   process.exit(0);
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });
+
+// ---- blocks found in solo mode (counted from accepted results at network difficulty) ----
+{
+  const { Miner } = require('../src/core/miner');
+  const { parseLine } = require('../src/core/parser');
+  const feed = (m, lines) => lines.forEach((l) => parseLine(l).forEach((e) => m._apply(e)));
+  const mk = (mode) => { const m = new Miner(); m.mode = mode; m.node = '127.0.0.1:17402'; m.nodeDiff = 0; m._emitStats = () => {}; return m; };
+  const job = (d) => `[x] net      new job from 127.0.0.1:17402 diff ${d} algo rx/sfx height 2097400`;
+  const acc = (a, d) => `[x] cpu      accepted (${a}/0) diff ${d} (61 ms)`;
+  const solo = mk('solo');
+  feed(solo, [job(27960000), acc(1, 27960000), job(28100000), acc(2, 28100000)]);
+  assert.strictEqual(solo.stats.blocks, 2); assert.strictEqual(solo.stats.accepted, 2);
+  // donation period: low-difficulty shares for someone else must not count as blocks
+  feed(solo, ['[x] net      new job from donate.v2.xmrig.org:3333 diff 120000 algo rx/0 height 5', acc(3, 120000), acc(4, 120000)]);
+  assert.strictEqual(solo.stats.blocks, 2); assert.strictEqual(solo.stats.accepted, 4);
+  const pool = mk('pool'); feed(pool, [job(120000), acc(1, 120000), acc(2, 120000)]);
+  assert.strictEqual(pool.stats.blocks, 0);
+  console.log('ok - solo: accepted results at network difficulty count as blocks; donation and pool shares do not');
+}

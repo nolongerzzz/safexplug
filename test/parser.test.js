@@ -41,11 +41,11 @@ t('threads profile', () => {
   assert.deepStrictEqual(e, { type: 'threads', profile: 'rx', threads: 2 });
 });
 t('share accepted', () => {
-  assert.deepStrictEqual(one('cpu      accepted (12/1) diff 120000 (81 ms)'), { type: 'shares', accepted: 12, rejected: 1 });
+  assert.deepStrictEqual(one('cpu      accepted (12/1) diff 120000 (81 ms)'), { type: 'shares', accepted: 12, rejected: 1, diff: 120000 });
 });
 t('new job with height', () => {
   const e = one('net      new job from 127.0.0.1:17402 diff 9001 algo rx/sfx height 2097366');
-  assert.deepStrictEqual(e, { type: 'job', from: '127.0.0.1:17402', algo: 'rx/sfx', height: 2097366 });
+  assert.deepStrictEqual(e, { type: 'job', from: '127.0.0.1:17402', diff: 9001, algo: 'rx/sfx', height: 2097366 });
 });
 t('block found', () => {
   assert.strictEqual(one('net      BLOCK FOUND at height 2097400').type, 'block-found');

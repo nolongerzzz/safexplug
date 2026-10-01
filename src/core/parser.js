@@ -17,7 +17,7 @@ function num(s) {
 // "speed 10s/60s/15m 6320.1 6301.4 n/a H/s max 6400.2 H/s"
 const SPEED = /speed\s+10s\/60s\/15m\s+(\S+)\s+(\S+)\s+(\S+)\s+(k?H\/s)(?:\s+max\s+(\S+)\s+(k?H\/s))?/i;
 // "accepted (12/1) diff 120000 (81 ms)"
-const SHARES = /(?:accepted|rejected)\s+\((\d+)\/(\d+)\)/i;
+const SHARES = /(?:accepted|rejected)\s+\((\d+)\/(\d+)\)(?:\s+diff\s+(\d+))?/i;
 // daemon / solo mode: "BLOCK FOUND", "block found", "found block"
 const BLOCK = /block\s+found|found\s+block|new\s+block\s+found/i;
 // "new job from 127.0.0.1:17402 diff 12345 algo rx/sfx height 2097366"
@@ -58,6 +58,7 @@ function parseLine(raw) {
       type: 'shares',
       accepted: parseInt(m[1], 10),
       rejected: parseInt(m[2], 10),
+      diff: m[3] ? parseInt(m[3], 10) : null,
     });
   }
 
@@ -68,6 +69,7 @@ function parseLine(raw) {
     events.push({
       type: 'job',
       from: m[1],
+      diff: Number(m[2]) || null,
       algo: m[3],
       height: m[4] ? parseInt(m[4], 10) : null,
     });

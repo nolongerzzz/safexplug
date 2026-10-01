@@ -76,6 +76,7 @@ class Miner extends EventEmitter {
     const bad = validate(settings);
     if (bad) return { ok: false, error: bad };
 
+    this.mode = settings.mode; this.node = settings.node; this.nodeDiff = 0;
     const bin = xmrigPath();
     try { fs.chmodSync(bin, 0o755); } catch (_) { /* read-only install is fine */ }
     if (!fs.existsSync(bin)) return { ok: false, error: 'Miner engine not found: ' + bin };
@@ -119,16 +120,27 @@ class Miner extends EventEmitter {
     setTimeout(() => { try { p.kill('SIGKILL'); } catch (_) {} }, 5000).unref();
   }
 
+  _fromNode(from) { return !!this.node && String(from).replace(/^[a-z]+:\/\//, '') === this.node; }
+
   _apply(ev) {
     const s = this.stats;
     switch (ev.type) {
       case 'hashrate': s.hashrate = ev.h10 ?? ev.h60 ?? ev.h15m ?? s.hashrate; s.hrMax = ev.max; break;
-      case 'shares': s.accepted = ev.accepted; s.rejected = ev.rejected; break;
+      case 'shares': {
+        // In solo mode the node only accepts a result that meets the NETWORK
+        // difficulty, so each new accepted result is a block. xmrig prints no
+        // "BLOCK FOUND" line (not in the binary), so count accepted results whose
+        // difficulty matches the node's, which also ignores the brief donation
+        // periods where it mines low-difficulty shares for someone else.
+        const gained = ev.accepted - s.accepted;
+        if (this.mode === 'solo' && gained > 0 && this.nodeDiff && (ev.diff === null || ev.diff >= this.nodeDiff * 0.5)) s.blocks += gained;
+        s.accepted = ev.accepted; s.rejected = ev.rejected; break;
+      }
       case 'block-found': s.blocks += 1; break;
       case 'threads': s.threads = ev.threads; break;
       case 'hugepages': s.hugepages = ev.percent; break;
       case 'msr': s.msr = ev.ok; break;
-      case 'job': s.connected = true; if (ev.height) s.height = ev.height; break;
+      case 'job': s.connected = true; if (ev.height) s.height = ev.height; if (this.mode === 'solo' && ev.diff && this._fromNode(ev.from)) this.nodeDiff = ev.diff; break;
       case 'connected': s.connected = true; break;
       case 'connection-error': s.connected = false; break;
     }
