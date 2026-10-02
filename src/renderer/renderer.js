@@ -519,24 +519,29 @@
     let hs = running ? (stats.hashrate || 0) : 0, acc = running ? (stats.accepted || 0) : 0, rej = running ? (stats.rejected || 0) : 0, online = running && stats.connected ? 1 : 0;
     rigRows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      const mk = (!r.online || r.hung) ? 'bad' : (r.otherWallet || !(r.hashrate > 0)) ? 'warn' : 'ok';
+      const mk = (!r.online || r.hung) ? 'bad' : (r.otherWallet || (r.reported && !r.mining) || !(r.hashrate > 0)) ? 'warn' : 'ok';
       nameCell(tr, r.name, mk);
       const td = cell(tr, '');
       if (!r.online) pill(td, r.reason === 'auth' ? 'wrong token' : 'offline', 'off');
       else if (r.hung) pill(td, 'hung', 'off');
       else if (r.otherWallet) pill(td, 'other wallet', 'warn');
+      else if (r.reported && !r.mining) pill(td, 'stopped', 'warn');
       else pill(td, 'mining', 'on');
       { const c = cell(tr, r.online ? fmtHs(r.hashrate) : '—', 'num'); const tip = []; if (r.threads) tip.push(`${r.threads} threads`); if (r.hashesTotal) tip.push(`${r.hashesTotal.toLocaleString()} hashes this run`); if (tip.length) c.title = tip.join(' · '); }
       avgCells(tr, r.avg);
       cell(tr, r.online ? `${r.accepted} / ${r.rejected}` : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
       const x = cell(tr, ''); const b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Remove';
-      b.onclick = async () => { settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
+      b.onclick = async () => { if (r.reported) await window.safex.rigForget(r.id); else settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
       x.appendChild(b); body.appendChild(tr);
-      if (r.online && !r.otherWallet) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
+      if (r.online && !r.otherWallet && !(r.reported && !r.mining)) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
     });
     setRigBadge(rigProblems(rigRows));
     { const e = expectedParts(hs || null); $('cExp').textContent = e.time; $('cExpSub').textContent = e.sub; }
     $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = `${acc} / ${rej}`;
+    $('collect').checked = !!settings.collect; $('reportTo').value = settings.reportTo || '';
+    $('collectHint').textContent = settings.collect ? 'Your other rigs find this computer by themselves and appear in the list above. Rigs at other locations: type this computer\'s address under Advanced on that rig.' : 'Tick this on ONE computer only (your main one). Every other rig then finds it automatically, with nothing to copy.';
+    if (settings.collect) $('mainBox').textContent = rigRows.some((r) => r.reported) ? '' : 'Waiting for rigs. Open this app on your other computers and they will appear here within a few seconds.';
+    else window.safex.reportStatus().then((st) => { const l = st.last || {}; $('mainBox').textContent = st.target ? (l.ok ? `This computer is reporting to ${l.to}.` : `Found your main computer at ${st.target.host}:${st.target.port}, connecting…`) : 'Looking for your main computer on this network… If this IS your main computer, tick the box below.'; });
     $('shareStats').checked = settings.shareStats;
     $('shareInfo').hidden = !settings.shareStats;
     if (settings.shareStats) { $('myAddr').value = `${init.lanAddress || 'this-machine'}:${settings.apiPort}`; $('myToken').value = settings.apiToken; }
@@ -552,6 +557,8 @@
     settings = await window.safex.setSettings({ rigs: [...settings.rigs, rig] });
     $('rName').value = ''; $('rHost').value = ''; $('rToken').value = '';
   };
+  $('collect').addEventListener('change', async () => { settings = await window.safex.setSettings({ collect: $('collect').checked }); renderRigs(); });
+  $('reportTo').addEventListener('change', async () => { settings = await window.safex.setSettings({ reportTo: $('reportTo').value.trim() }); renderRigs(); });
   $('shareStats').addEventListener('change', async () => {
     settings = await window.safex.setSettings({ shareStats: $('shareStats').checked }); renderRigs();
   });

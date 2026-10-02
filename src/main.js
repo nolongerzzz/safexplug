@@ -11,6 +11,7 @@ const maint = require('./core/maintenance');
 const wallet = require('./core/wallet');
 const wsetup = require('./core/walletsetup');
 const explorer = require('./core/explorer');
+const { Collector, Reporter } = require('./core/reporter');
 const { HashLog } = require('./core/hashlog');
 const crypto = require('crypto');
 
@@ -29,6 +30,7 @@ const PUBLIC_NODE = 'rpc.safex.org:17402';
 let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
+let collector = null, reporter = null, miningSince2 = 0;
 let hashLog = null;
 const rigLogs = new Map();      // per-rig hashrate history
 const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
@@ -228,16 +230,25 @@ function rigLog(key) {
 }
 const HUNG_AFTER_MS = Number(process.env.SAFEX_HUNG_MS) || 120000;   // answering but not hashing for 2 minutes = hung
 const windows = (log) => ({ h1: log.summary(3600).avg, h6: log.summary(6 * 3600).avg, h24: log.summary(86400).avg });
+function applyReporting() {
+  if (!settings || !collector || !reporter) return;
+  if (settings.get().collect) { reporter.stop(); collector.start(); } else { collector.stop(); reporter.start(); }
+}
 async function pollRigs() {
   if (rigsBusy) return;
   rigsBusy = true;
   try {
     const s = settings.get();
-    const rows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
+    const polled = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
+    const reported = s.collect && collector ? collector.list().map((r) => ({ name: r.name, host: r.id, port: 0, id: r.id, reported: true, online: r.online, reason: 'no report',
+      mining: r.mining, hashrate: r.mining ? r.hashrate : 0, threads: r.threads || null, accepted: r.accepted, rejected: r.rejected, uptime: r.uptime,
+      connected: r.connected, otherWallet: !!(r.wallet && s.address && r.wallet !== s.address) })) : [];
+    const rows = polled.concat(reported);
     const now = Date.now();
     rigRows = rows.map((r) => {
       const key = rigKey(r); const log = rigLog(key); let hung = false;
       if (r.online && r.hashrate > 0) { log.add(r.hashrate); zeroSince.delete(key); }
+      else if (r.online && r.reported && !r.mining) zeroSince.delete(key);
       else if (r.online) { if (!zeroSince.has(key)) zeroSince.set(key, now); hung = now - zeroSince.get(key) > HUNG_AFTER_MS; }
       else zeroSince.delete(key);
       return { ...r, hung, avg: windows(log) };
@@ -328,10 +339,19 @@ function createWindow() {
 
 app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
+  if (!settings.get().rigId) settings.set({ rigId: crypto.randomUUID() });
+  collector = new Collector(app.getPath('userData'));
+  reporter = new Reporter(() => settings.get().reportTo, () => {
+    const st = miner.stats || {}, s = settings.get();
+    return { id: s.rigId, name: s.name || os.hostname(), mining: miner.running, connected: !!st.connected, hashrate: miner.running ? (st.hashrate || 0) : 0,
+      threads: st.threads || 0, accepted: st.accepted || 0, rejected: st.rejected || 0, uptime: miner.running && miningSince2 ? Math.floor((Date.now() - miningSince2) / 1000) : 0,
+      wallet: s.address || '', version: app.getVersion() };
+  });
+  applyReporting();
 
   miner.on('log', (l) => send('miner:log', l));
   miner.on('stats', (st) => send('miner:stats', st));
-  miner.on('state', (st) => send('miner:state', st));
+  miner.on('state', (st) => { if (st && st.running) miningSince2 = Date.now(); send('miner:state', st); });
   miner.on('exit', (e) => { send('miner:state', { running: false, exit: e }); });
 
   const lanAddress = () => {
@@ -352,7 +372,7 @@ app.whenReady().then(() => {
     patch = patch || {};
     // Switching on stats sharing creates the access token the first time.
     if (patch.shareStats && !settings.get().apiToken && !patch.apiToken) patch.apiToken = crypto.randomBytes(16).toString('hex');
-    const s = settings.set(patch); pollNode(); if ('rigs' in patch) pollRigs();
+    const s = settings.set(patch); pollNode(); if ('rigs' in patch || 'collect' in patch) { applyReporting(); pollRigs(); }
     if ('walletRpc' in patch || 'miningSince' in patch) { payAt = 0; pollWallet(); }
     return s;
   });
@@ -411,6 +431,8 @@ app.whenReady().then(() => {
   ipcMain.handle('explorer:block', async (_e, q) => { const r = await exploreCall((h) => explorer.block(h, String(q || ''))); return { ...r, mine: mineHeights() }; });
   ipcMain.handle('explorer:tx', (_e, hash) => exploreCall((h) => explorer.tx(h, String(hash || ''))));
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
+  ipcMain.handle('rigs:forget', (_e, id) => { collector.forget(String(id || '')); pollRigs(); return true; });
+  ipcMain.handle('rigs:report-status', () => ({ collect: settings.get().collect, last: reporter.last, target: reporter.target() }));
   ipcMain.handle('node:action', (_e, action) => nodeAction(String(action)));
   ipcMain.handle('node:refresh', async () => { await pollDocker(); return { docker: dockerStatus, busy: nodeBusy, plan: docker.installPlan(), log: nodeLogBuf.slice(), addrs: shareAddrs() }; });
   ipcMain.handle('maint:overview', () => maint.overview());

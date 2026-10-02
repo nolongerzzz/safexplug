@@ -1,0 +1,35 @@
+'use strict';
+process.env.SAFEX_REPORT_PORT = '28090'; process.env.SAFEX_DISCOVER_PORT = '28091'; process.env.SAFEX_DISCOVER_HOST = '127.0.0.1';
+const assert = require('assert'), fs = require('fs'), os = require('os'), path = require('path'), http = require('http');
+const { Collector, Reporter, clean } = require('../src/core/reporter');
+let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const post = (port, body, raw) => new Promise((res) => { const d = raw || JSON.stringify(body); const q = http.request({ host: '127.0.0.1', port, path: '/report', method: 'POST' }, (r) => { r.resume(); res(r.statusCode); }); q.on('error', () => res(0)); q.end(d); });
+const ID = 'rig-1234abcd';
+(async () => {
+  assert.strictEqual(clean({ id: 'x' }), null); assert.strictEqual(clean({ id: '../../etc/passwd1' }), null); assert.strictEqual(clean(null), null); ok('bad ids and junk are refused');
+  const c = clean({ id: ID, name: '<b>Mac\u0000</b>' + 'x'.repeat(100), hashrate: -5, threads: 'lots', mining: 'yes', accepted: 3, wallet: 5 });
+  assert.ok(c.name.length <= 40 && !/[<>\u0000]/.test(c.name)); assert.strictEqual(c.hashrate, 0); assert.strictEqual(c.threads, 0); assert.strictEqual(c.mining, false); assert.strictEqual(c.accepted, 3); ok('fields are cleaned: names stripped and capped, bad numbers become 0, flags must be real booleans');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sxrep-'));
+  const col = new Collector(dir); col.start(); await wait(200);
+  assert.strictEqual(await post(28090, { id: ID, name: 'Mac', hashrate: 4000, threads: 4, mining: true, connected: true }), 204); assert.strictEqual(col.list().length, 1); assert.ok(col.list()[0].online); ok('a report makes the rig appear, online');
+  assert.strictEqual(await post(28090, null, 'not json'), 400); assert.strictEqual(await post(28090, { id: 'short' }), 400); const before = col.list().length; assert.notStrictEqual(await post(28090, { id: 'big-1234abcd', name: 'y'.repeat(6000) }), 204); assert.strictEqual(col.list().length, before); ok('garbage and oversize reports are rejected');
+  assert.ok(!col.list(Date.now() + 25000)[0].online); assert.strictEqual(col.list(Date.now() + 25000).length, 1); ok('a silent rig turns offline but stays on the list');
+  const col2 = new Collector(dir); assert.strictEqual(col2.list().length, 1); assert.strictEqual(col2.list()[0].name.slice(0, 3), 'Mac'); ok('the list survives an app restart');
+  for (let i = 0; i < 60; i++) col.accept({ id: 'filler-' + String(i).padStart(4, '0') + 'xx', name: 'f' }, '1.2.3.4');
+  assert.ok(col.rigs.size <= 50); ok('list is capped at 50 rigs');
+  assert.ok(col.forget(ID)); assert.ok(!col.list().some((r) => r.id === ID)); ok('Remove forgets a rig');
+  col.rigs.clear();
+
+  const rep = new Reporter(() => '', () => ({ id: ID, name: 'Mac', hashrate: 4100, threads: 4, mining: true, connected: true }));
+  assert.strictEqual(rep.target(), null); assert.strictEqual(await rep.send(), false); ok('with no collector found, nothing is sent and nothing breaks');
+  rep.start(); await wait(5600);
+  assert.ok(rep.target() && rep.target().how === 'found' && rep.target().port === 28090); ok('rig finds the collector by itself from its announcement');
+  await rep.send(); await wait(100); assert.ok(col.list().some((r) => r.id === ID && r.hashrate === 4100)); ok('and its stats show up with no address, token or setup');
+  rep.stop(); col.stop();
+  const typed = new Reporter(() => '127.0.0.1:28090', () => ({ id: ID, name: 'Remote', hashrate: 1 })); col.start(); await wait(200);
+  assert.strictEqual(typed.target().how, 'typed'); assert.ok(await typed.send()); ok('a typed address (remote rigs) works the same way');
+  col.stop(); typed.stop();
+  console.log(`\n${n} checks passed`); process.exit(0);
+})().catch((e) => { console.error('FAIL', e); process.exit(1); });

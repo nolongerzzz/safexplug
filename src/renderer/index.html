@@ -165,26 +165,33 @@
         <thead><tr><th>Miner</th><th>Status</th><th>Now</th><th>1 h</th><th>6 h</th><th>24 h</th><th>Shares</th><th>Uptime</th><th></th></tr></thead>
         <tbody id="rigBody"></tbody>
       </table>
-      <div class="row">
-        <label class="grow">Name<input id="rName" type="text" placeholder="Garage rig"></label>
-        <label class="grow">Address<input id="rHost" type="text" spellcheck="false" placeholder="100.101.102.103:18080"></label>
-        <label class="grow">Access token<input id="rToken" type="text" spellcheck="false" placeholder="shown on that rig, see below"></label>
-        <button id="rAdd" class="mini big">Add miner</button>
-      </div>
-      <div class="hint">Where do the address and token come from? On the <b>other rig</b>, open this app, go to this Rigs tab and tick "Share this miner's stats". It shows that rig's address and a token (made automatically). Click "Copy both", then paste them into the boxes above here. The token is just a password so only you can read that rig's stats. Start mining again on that rig for it to take effect.</div>
-      <div id="rErr" class="error" hidden></div>
+      <div id="mainBox" class="hint"></div>
     </section>
     <section class="panel">
-      <label class="check"><input id="shareStats" type="checkbox"> Share this miner's stats so other rigs can add it (read-only, needs the token)</label>
+      <label class="check"><input id="collect" type="checkbox"> This is my main computer: show my other rigs here</label>
+      <div class="hint" id="collectHint"></div>
+    </section>
+    <details class="panel adv">
+      <summary>Advanced: add a rig by address, or point this rig at a main computer</summary>
+      <div class="row">
+        <label class="grow">Report to (leave empty to find the main computer automatically)<input id="reportTo" type="text" spellcheck="false" placeholder="10.0.0.5:18090"></label>
+      </div>
+      <div class="row">
+        <label class="grow">Name<input id="rName" type="text" placeholder="Garage rig"></label>
+        <label class="grow">Address<input id="rHost" type="text" spellcheck="false" placeholder="10.0.0.7:18080"></label>
+        <label class="grow">Access token<input id="rToken" type="text" spellcheck="false" placeholder="optional"></label>
+        <button id="rAdd" class="mini big">Add miner</button>
+      </div>
+      <div id="rErr" class="error" hidden></div>
+      <label class="check"><input id="shareStats" type="checkbox"> Let another computer read this miner's stats directly (read-only, needs the token)</label>
       <div id="shareInfo" class="shareinfo" hidden>
-        <div class="hint">On the other machine, add a miner with this address and token. Both machines must be able to reach each other on the network. Takes effect the next time mining starts.</div>
         <div class="row">
           <label class="grow">Address<input id="myAddr" type="text" readonly></label>
           <label class="grow">Access token<input id="myToken" type="text" readonly></label>
           <button id="copyShare" class="mini big">Copy both</button>
         </div>
       </div>
-    </section>
+    </details>
   </div>
   <div id="payView" class="view" hidden>
     <section class="strip rigstrip">

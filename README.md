@@ -2,6 +2,14 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.0
+
+- **Rigs report in. No tokens, no addresses.** On your main computer, open the Rigs tab and tick "This is my main computer". Every other copy of the app on the same network finds it automatically and shows up in the list within seconds, mining or stopped, and turns red if it goes quiet. It works the way a pool worker reports to a pool: the rigs send their numbers out, nothing reaches into them.
+- Rigs at another location: on that rig, Rigs tab > Advanced > "Report to", type the main computer's address once (e.g. 10.0.0.5:18090).
+- Reports are display-only numbers (name, hashrate, shares). They cannot start, stop or change anything. The list remembers rigs between restarts; Remove forgets one.
+- The old add-by-address-and-token form and "share stats" are still there under Advanced, for watching a plain xmrig miner.
+- Ports used: 18090 (reports, main computer only) and 18091 (UDP announcement). If a firewall asks, allow them on your private network.
+
 ## What's new in 3.0.9
 
 - Last Tailscale leftovers (unused display code and styles, a test stub, old README lines) deleted. Nothing in the app depends on or refers to it.

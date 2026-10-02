@@ -23,6 +23,9 @@ const DEFAULTS = {
   walletSeen: -1,          // payments already acknowledged (clears the Payments tab bubble)
   walletScanFrom: 0,       // block the app-managed view-only wallet scans from (shown as the tally's start)
   miningSince: 0,          // unix seconds: payments are counted from here (set at first mining start)
+  collect: false,          // this is the main computer: list rigs that report in
+  reportTo: '',            // optional host:port of the main computer (normally found automatically)
+  rigId: '',               // stable id this machine reports under
   rigs: [],                // other miners to watch: [{name, host, port, token}]
 };
 
@@ -52,6 +55,7 @@ class Settings {
       if (k === 'rigs') { if (Array.isArray(patch.rigs)) clean.rigs = sanitizeRigs(patch.rigs); continue; }
       if (typeof patch[k] !== typeof DEFAULTS[k]) continue;
       if (k === 'walletRpc' && patch[k] && !/^(127\.0\.0\.1|localhost):\d{2,5}$/.test(patch[k].trim())) continue; // local wallet only
+      if (k === 'reportTo' && patch[k] && !/^[A-Za-z0-9.\-]{1,253}:\d{2,5}$/.test(patch[k].trim())) continue;
       if (k === 'startDelay' && !(patch[k] >= 0 && patch[k] <= 300)) continue;
       if (k === 'apiPort' && !(Number.isInteger(patch[k]) && patch[k] > 1023 && patch[k] < 65536)) continue;
       clean[k] = patch[k];

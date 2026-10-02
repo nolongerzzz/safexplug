@@ -151,3 +151,6 @@ input[readonly]{opacity:.85}
 /* small screens (7-inch panels): tabs shrink and scroll instead of overflowing */
 .tabs{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 @media(max-width:760px){.tabs button{padding:8px 10px}.app{padding:10px 10px 6px}}
+details.adv>summary{cursor:pointer;color:var(--mute);font-size:13px}
+details.adv[open]>summary{margin-bottom:10px}
+details.adv{gap:0}
