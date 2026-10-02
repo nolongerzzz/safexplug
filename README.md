@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.4
+
+- **The rig name box is always visible.** It used to live in the Pool row, which solo mode hides, so solo miners could not find it. It now has its own row ("Rig name") under the address in both modes.
+
 ## What's new in 3.1.3
 
 - **Name each rig from its own app.** In solo mode the Miner name box stays editable while mining and the new name reaches the main computer's list (and every other screen) within about 5 seconds. A computer's own row now shows its name ("Ryzen · this machine") instead of just "This machine".
