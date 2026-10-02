@@ -142,6 +142,8 @@
     go.className = 'go' + (running || waiting ? ' active' : '');
     const lock = running || waiting;
     ['address', 'name', 'pool', 'node', 'cpu', 'donate'].forEach((id) => ($(id).disabled = lock));
+    // Solo mode has no pool, so the name is only a label: let it be changed while mining.
+    if (settings.mode === 'solo') $('name').disabled = false;
   }
 
   function renderStats() {
@@ -511,7 +513,7 @@
     const body = $('rigBody'); body.textContent = '';
     // this machine
     const me = document.createElement('tr'); me.className = 'me';
-    nameCell(me, 'This machine', running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
+    nameCell(me, settings.name ? `${settings.name} · this machine` : 'This machine', running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
     { const c = cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); if (stats.threads) c.title = `${stats.threads} threads`; }
     avgCells(me, selfAvg);
     cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
