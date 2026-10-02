@@ -36,7 +36,7 @@ cd xmrig-6.26.0
 patch -p1 < "$PATCH"
 
 echo "5/5 Building (this is the long part)..."
-UVP="$("$BREW" --prefix libuv)"; SSL="$("$BREW" --prefix openssl@3)"
+UVP="$DEPS"; SSL="$("$BREW" --prefix openssl@3)"
 UVLIB="$UVP/lib/libuv.a"; [ -f "$UVLIB" ] || UVLIB="$UVP/lib/libuv.dylib"
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_HWLOC=OFF -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DWITH_NVML=OFF -DWITH_ADL=OFF \
