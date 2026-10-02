@@ -486,17 +486,15 @@
 
   // ---- rigs ---------------------------------------------------------------
   let rigRows = [];
-  let selfTs = null;
   const fmtUp = (s) => { if (!s) return '—'; const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
   const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
   // ✓ green = answering and hashing, ✗ red = down, ! amber = answering but not hashing / needs attention
   const MARK = { ok: ['✓', 'Mining'], bad: ['✗', 'Not responding'], warn: ['!', 'Needs a look'] };
-  function nameCell(tr, name, line, mark) {
+  function nameCell(tr, name, mark) {
     const td = document.createElement('td');
     const a = document.createElement('div'); a.className = 'rname';
     if (mark) { const m = document.createElement('span'); m.className = 'mark mark-' + mark; m.textContent = MARK[mark][0]; m.title = MARK[mark][1]; a.appendChild(m); }
     a.appendChild(document.createTextNode(name)); td.appendChild(a);
-    if (line) { const b = document.createElement('div'); b.className = 'tsline ts-' + line.level; b.textContent = line.text; td.appendChild(b); }
     tr.appendChild(td);
   }
   function pill(td, text, cls) { const sp = document.createElement('span'); sp.className = 'pill ' + cls; sp.textContent = text; td.appendChild(sp); }
@@ -513,7 +511,7 @@
     const body = $('rigBody'); body.textContent = '';
     // this machine
     const me = document.createElement('tr'); me.className = 'me';
-    nameCell(me, 'This machine', selfTs, running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
+    nameCell(me, 'This machine', running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
     { const c = cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); if (stats.threads) c.title = `${stats.threads} threads`; }
     avgCells(me, selfAvg);
     cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
@@ -522,7 +520,7 @@
     rigRows.forEach((r, i) => {
       const tr = document.createElement('tr');
       const mk = (!r.online || r.hung) ? 'bad' : (r.otherWallet || !(r.hashrate > 0)) ? 'warn' : 'ok';
-      nameCell(tr, r.name, r.ts, mk);
+      nameCell(tr, r.name, mk);
       const td = cell(tr, '');
       if (!r.online) pill(td, r.reason === 'auth' ? 'wrong token' : 'offline', 'off');
       else if (r.hung) pill(td, 'hung', 'off');
@@ -543,7 +541,7 @@
     $('shareInfo').hidden = !settings.shareStats;
     if (settings.shareStats) { $('myAddr').value = `${init.lanAddress || 'this-machine'}:${settings.apiPort}`; $('myToken').value = settings.apiToken; }
   }
-  window.safex.onRigs((p) => { rigRows = p.rows || []; selfTs = p.self || null; selfAvg = p.selfAvg || null; setRigBadge(rigProblems(rigRows)); if (!$('rigsView').hidden) renderRigs(); });
+  window.safex.onRigs((p) => { rigRows = p.rows || []; selfAvg = p.selfAvg || null; setRigBadge(rigProblems(rigRows)); if (!$('rigsView').hidden) renderRigs(); });
 
   $('rAdd').onclick = async () => {
     const err = $('rErr'); err.hidden = true;

@@ -2,9 +2,13 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.9
+
+- Last Tailscale leftovers (unused display code and styles, a test stub, old README lines) deleted. Nothing in the app depends on or refers to it.
+
 ## What's new in 3.0.8
 
-- **Tailscale removed.** The app no longer detects or mentions Tailscale. Rigs are added by address and token, and the node-sharing switch just shows your network address. (Tailscale itself still works fine underneath if you use it; the app just doesn't know about it.)
+- **Tailscale removed.** No Tailscale code, text or styling remains. Rigs are added by address and token, and the node-sharing switch just shows your network address.
 
 ## What's new in 3.0.7
 
@@ -12,7 +16,7 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 
 ## What's new in 3.0.6
 
-- **Let my other devices use this node.** New switch on the Node tab. Off by default. When on, the node's RPC port (17402) is also reachable from your home network or Tailscale (the node restarts; chain data is not touched), and the Node tab shows the address to type on the other computer. Use it as the "node address" in My node (solo) mode on a Mac or any other rig. Anyone on that network could reach the RPC port, so only use it on a network you trust. ZMQ stays local.
+- **Let my other devices use this node.** New switch on the Node tab. Off by default. When on, the node's RPC port (17402) is also reachable from your home network or other devices on your network (the node restarts; chain data is not touched), and the Node tab shows the address to type on the other computer. Use it as the "node address" in My node (solo) mode on a Mac or any other rig. Anyone on that network could reach the RPC port, so only use it on a network you trust. ZMQ stays local.
 
 ## What's new in 3.0.5
 
@@ -101,7 +105,7 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 
 ## What's new in 2.6.1
 
-- Rigs tab: a green ✓ / red ✗ / amber ! box on every rig, and the Rigs tab itself turns red with a count ("Rigs ✗ 2") when any rig stops answering. The Tailscale line stays underneath as a hint about *why*.
+- Rigs tab: a green ✓ / red ✗ / amber ! box on every rig, and the Rigs tab itself turns red with a count ("Rigs ✗ 2") when any rig stops answering.
 
 ## What's new in 2.6
 
@@ -110,7 +114,6 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 ## What's new in 2.5
 
 - **Expected block tile** (Mine tab, Solo mode): average time to find a block at your hashrate and the chance within the next hour. Rigs tab has the same for all rigs combined.
-- **Tailscale line on every rig**: online and answering, machine up but miner silent, machine offline (last seen), or not on Tailscale. Read-only; the app never changes Tailscale.
 - Fixed a startup race where the node output and network hashrate could be blank for the first moments.
 
 ## What's new in 2.4
@@ -122,7 +125,7 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 ## What was new in 2.3
 
 - **Network hashrate** next to the logo, estimated from network difficulty (from your node, or the public node if you have none; switch off with `publicFallback` in settings).
-- **Rigs tab**: add other miners by address and access token and see each one's status, hashrate, threads, shares and uptime, plus the **combined hashrate for your wallet**. Rigs mining to a different wallet are flagged and left out of the combined total. Any xmrig miner with its HTTP API enabled works. For this app, tick "Share this miner's stats" to get the address and token to paste on the other machine. Use the Tailscale address so it works from anywhere without opening your router.
+- **Rigs tab**: add other miners by address and access token and see each one's status, hashrate, threads, shares and uptime, plus the **combined hashrate for your wallet**. Rigs mining to a different wallet are flagged and left out of the combined total. Any xmrig miner with its HTTP API enabled works. For this app, tick "Share this miner's stats" to get the address and token to paste on the other machine.
 - **10 second start delay** when "Start mining when app opens" is on, with a visible countdown (`startDelay` in settings; Stop cancels it).
 - **Sync detection fixed**: a node that has just restarted reports no network height and no peers, which used to read as "Synced" for a few seconds. A node now only counts as synced when it has peers, is within a block of the network, and has stayed synced for two checks in a row.
 
