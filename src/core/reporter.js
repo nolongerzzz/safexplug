@@ -28,7 +28,7 @@ function clean(j) {
 }
 
 class Collector {
-  constructor(dir) { this.file = path.join(dir, 'reported-rigs.json'); this.rigs = new Map(); this.server = null; this.sock = null; this.timer = null;
+  constructor(dir, getSelf) { this.getSelf = getSelf || null; this.file = path.join(dir, 'reported-rigs.json'); this.rigs = new Map(); this.server = null; this.sock = null; this.timer = null;
     try { for (const r of JSON.parse(fs.readFileSync(this.file, 'utf8'))) if (clean(r)) this.rigs.set(r.id, { ...clean(r), seen: Number(r.seen) || 0, ip: str(r.ip, 45) }); } catch (_) {} }
   save() { try { fs.mkdirSync(path.dirname(this.file), { recursive: true }); fs.writeFileSync(this.file, JSON.stringify([...this.rigs.values()])); } catch (_) {} }
   accept(j, ip) {
@@ -43,7 +43,12 @@ class Collector {
     this.server = http.createServer((q, res) => {
       if (q.method !== 'POST' || q.url !== '/report') { res.statusCode = 404; return res.end(); }
       let b = ''; q.on('data', (d) => { b += d; if (b.length > 4096) { res.statusCode = 413; res.end(); q.destroy(); } });
-      q.on('end', () => { let ok = false; try { ok = this.accept(JSON.parse(b), (q.socket.remoteAddress || '').replace(/^::ffff:/, '')); } catch (_) {} res.statusCode = ok ? 204 : 400; res.end(); });
+      q.on('end', () => { let ok = false; try { ok = this.accept(JSON.parse(b), (q.socket.remoteAddress || '').replace(/^::ffff:/, '')); } catch (_) {} if (!ok) { res.statusCode = 400; return res.end(); }
+        // Answer with the whole list so a reporting computer can show the same dashboard.
+        const id0 = (() => { try { return clean(JSON.parse(b)).id; } catch (_) { return ''; } })();
+        let list = this.list().filter((r) => r.id !== id0).map((r) => ({ ...r, ip: undefined }));
+        try { const me = this.getSelf && clean(this.getSelf()); if (me && me.id !== id0) list.unshift({ ...me, online: true, main: true }); } catch (_) {}
+        res.statusCode = 200; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ rigs: list.slice(0, MAX_RIGS) })); });
     });
     this.server.on('error', () => {}); this.server.listen(REPORT_PORT, '0.0.0.0');
     this.sock = dgram.createSocket('udp4'); this.sock.on('error', () => {});
@@ -56,7 +61,7 @@ class Collector {
 
 class Reporter {
   // getTarget() -> "host:port" typed by the user or ''; getPayload() -> report object
-  constructor(getTarget, getPayload) { this.getTarget = getTarget; this.getPayload = getPayload; this.found = null; this.sock = null; this.timer = null; this.last = { ok: false, at: 0 }; }
+  constructor(getTarget, getPayload) { this.getTarget = getTarget; this.getPayload = getPayload; this.found = null; this.sock = null; this.timer = null; this.last = { ok: false, at: 0 }; this.peers = []; }
   target() {
     const t = String(this.getTarget() || '').trim(); const m = /^([A-Za-z0-9.\-]+):(\d{1,5})$/.exec(t);
     if (m) return { host: m[1], port: Number(m[2]), how: 'typed' };
@@ -73,11 +78,12 @@ class Reporter {
   }
   stop() { clearInterval(this.timer); this.timer = null; try { this.sock && this.sock.close(); } catch (_) {} this.sock = null; }
   send() {
-    const t = this.target(); if (!t) { this.last = { ok: false, at: Date.now(), why: 'no collector found' }; return Promise.resolve(false); }
+    const t = this.target(); if (!t) { this.peers = []; this.last = { ok: false, at: Date.now(), why: 'no collector found' }; return Promise.resolve(false); }
     const body = JSON.stringify(this.getPayload());
     return new Promise((resolve) => {
-      const req = http.request({ host: t.host, port: t.port, path: '/report', method: 'POST', timeout: 3000, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => { res.resume(); this.last = { ok: res.statusCode === 204, at: Date.now(), to: `${t.host}:${t.port}`, how: t.how }; resolve(this.last.ok); });
-      req.on('timeout', () => req.destroy()); req.on('error', () => { this.last = { ok: false, at: Date.now(), why: 'collector not answering' }; resolve(false); });
+      const req = http.request({ host: t.host, port: t.port, path: '/report', method: 'POST', timeout: 3000, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => { let rb = ''; res.on('data', (d) => { if (rb.length < 65536) rb += d; }); res.on('end', () => { try { const j = JSON.parse(rb); this.peers = (Array.isArray(j.rigs) ? j.rigs : []).map((r) => ({ ...clean(r), online: !!r.online, main: !!r.main })).filter((r) => r.id); } catch (_) {} });
+        this.last = { ok: res.statusCode === 204 || res.statusCode === 200, at: Date.now(), to: `${t.host}:${t.port}`, how: t.how }; resolve(this.last.ok); });
+      req.on('timeout', () => req.destroy()); req.on('error', () => { this.peers = []; this.last = { ok: false, at: Date.now(), why: 'collector not answering' }; resolve(false); });
       req.end(body);
     });
   }

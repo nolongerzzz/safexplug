@@ -532,7 +532,7 @@
       cell(tr, r.online ? `${r.accepted} / ${r.rejected}` : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
       const x = cell(tr, ''); const b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Remove';
       b.onclick = async () => { if (r.reported) await window.safex.rigForget(r.id); else settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
-      x.appendChild(b); body.appendChild(tr);
+      if (!r.remote) x.appendChild(b); body.appendChild(tr);
       if (r.online && !r.otherWallet && !(r.reported && !r.mining)) { hs += r.hashrate || 0; acc += r.accepted; rej += r.rejected; online += 1; }
     });
     setRigBadge(rigProblems(rigRows));

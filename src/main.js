@@ -243,7 +243,11 @@ async function pollRigs() {
     const reported = s.collect && collector ? collector.list().map((r) => ({ name: r.name, host: r.id, port: 0, id: r.id, reported: true, online: r.online, reason: 'no report',
       mining: r.mining, hashrate: r.mining ? r.hashrate : 0, threads: r.threads || null, accepted: r.accepted, rejected: r.rejected, uptime: r.uptime,
       connected: r.connected, otherWallet: !!(r.wallet && s.address && r.wallet !== s.address) })) : [];
-    const rows = polled.concat(reported);
+    // A reporting computer also shows the main computer's list, so any screen can be the dashboard.
+    const peers = !s.collect && reporter ? reporter.peers.filter((r) => r.id !== s.rigId).map((r) => ({ name: r.name + (r.main ? ' (main)' : ''), host: r.id, port: 0, id: r.id, reported: true, remote: true, online: r.online, reason: 'no report',
+      mining: r.mining, hashrate: r.mining ? r.hashrate : 0, threads: r.threads || null, accepted: r.accepted, rejected: r.rejected, uptime: r.uptime,
+      connected: r.connected, otherWallet: !!(r.wallet && s.address && r.wallet !== s.address) })) : [];
+    const rows = polled.concat(reported, peers);
     const now = Date.now();
     rigRows = rows.map((r) => {
       const key = rigKey(r); const log = rigLog(key); let hung = false;
@@ -340,13 +344,14 @@ function createWindow() {
 app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
   if (!settings.get().rigId) settings.set({ rigId: crypto.randomUUID() });
-  collector = new Collector(app.getPath('userData'));
-  reporter = new Reporter(() => settings.get().reportTo, () => {
+  const selfPayload = () => {
     const st = miner.stats || {}, s = settings.get();
     return { id: s.rigId, name: s.name || os.hostname(), mining: miner.running, connected: !!st.connected, hashrate: miner.running ? (st.hashrate || 0) : 0,
       threads: st.threads || 0, accepted: st.accepted || 0, rejected: st.rejected || 0, uptime: miner.running && miningSince2 ? Math.floor((Date.now() - miningSince2) / 1000) : 0,
       wallet: s.address || '', version: app.getVersion() };
-  });
+  };
+  collector = new Collector(app.getPath('userData'), selfPayload);
+  reporter = new Reporter(() => settings.get().reportTo, selfPayload);
   applyReporting();
 
   miner.on('log', (l) => send('miner:log', l));
