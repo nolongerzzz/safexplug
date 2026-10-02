@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.0.8
+
+- **Tailscale removed.** The app no longer detects or mentions Tailscale. Rigs are added by address and token, and the node-sharing switch just shows your network address. (Tailscale itself still works fine underneath if you use it; the app just doesn't know about it.)
+
 ## What's new in 3.0.7
 
 - **Small screens (7-inch panels).** Every tab now scrolls, so nothing is cut off at the bottom. The window can shrink to 480 x 360 and the tab bar tightens up instead of overflowing.

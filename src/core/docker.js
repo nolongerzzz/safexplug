@@ -72,7 +72,7 @@ async function status() {
 // The run arguments. RPC and ZMQ are published on localhost only; only the
 // P2P port is reachable from outside, so nobody else can query your node.
 // With share=true (the user's "let my other devices use this node" switch) the RPC
-// port is also reachable from the home network / Tailscale. ZMQ always stays local.
+// port is also reachable from the home network. ZMQ always stays local.
 function runArgs(share) {
   return ['run', '-d', '--name', CONTAINER, '--restart', 'unless-stopped',
     '--stop-timeout', String(STOP_SECONDS),

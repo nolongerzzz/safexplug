@@ -8,7 +8,6 @@ const { getInfo } = require('./core/node-status');
 const docker = require('./core/docker');
 const rigs = require('./core/rigs');
 const maint = require('./core/maintenance');
-const tailscale = require('./core/tailscale');
 const wallet = require('./core/wallet');
 const wsetup = require('./core/walletsetup');
 const explorer = require('./core/explorer');
@@ -30,7 +29,6 @@ const PUBLIC_NODE = 'rpc.safex.org:17402';
 let lastPublic = { at: 0, info: null };
 let rigRows = [];
 let rigsBusy = false;
-let tsCache = { at: 0, status: null };
 let hashLog = null;
 const rigLogs = new Map();      // per-rig hashrate history
 const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
@@ -70,12 +68,12 @@ function manageLogs() {
     logStream.on('exit', () => { logStream = null; });
   } else if (!want && logStream) { logStream.stop(); logStream = null; }
 }
-// Addresses another device can use to reach this node (home network and Tailscale).
+// Addresses another device can use to reach this node (home network).
 function shareAddrs() {
   const out = [];
   for (const [name, list] of Object.entries(os.networkInterfaces())) for (const a of list || []) {
     if (a.family !== 'IPv4' || a.internal || /^(docker|br-|veth|virbr)/.test(name)) continue;
-    out.push({ ip: a.address, label: /^100\./.test(a.address) || /tailscale/i.test(name) ? 'Tailscale' : 'Home network' });
+    out.push({ ip: a.address, label: 'Network' });
   }
   return out;
 }
@@ -235,8 +233,6 @@ async function pollRigs() {
   rigsBusy = true;
   try {
     const s = settings.get();
-    // Tailscale status is cheap but not free: refresh at most every 15 s.
-    if (Date.now() - tsCache.at > 15000) tsCache = { at: Date.now(), status: await tailscale.status() };
     const rows = s.rigs.length ? await rigs.pollAll(s.rigs, s.address) : [];
     const now = Date.now();
     rigRows = rows.map((r) => {
@@ -244,9 +240,9 @@ async function pollRigs() {
       if (r.online && r.hashrate > 0) { log.add(r.hashrate); zeroSince.delete(key); }
       else if (r.online) { if (!zeroSince.has(key)) zeroSince.set(key, now); hung = now - zeroSince.get(key) > HUNG_AFTER_MS; }
       else zeroSince.delete(key);
-      return { ...r, hung, avg: windows(log), ts: tailscale.describe(tsCache.status, r) };
+      return { ...r, hung, avg: windows(log) };
     });
-    send('rigs:status', { rows: rigRows, self: tailscale.describeSelf(tsCache.status), selfAvg: windows(hashLog) });
+    send('rigs:status', { rows: rigRows, selfAvg: windows(hashLog) });
   } finally { rigsBusy = false; }
 }
 
@@ -340,7 +336,7 @@ app.whenReady().then(() => {
 
   const lanAddress = () => {
     const all = [].concat(...Object.values(os.networkInterfaces())).filter((i) => i.family === 'IPv4' && !i.internal).map((i) => i.address);
-    return all.find((a) => a.startsWith('100.')) || all[0] || null;   // Tailscale first
+    return all[0] || null;
   };
   ipcMain.handle('app:init', () => ({
     net: lastNet,

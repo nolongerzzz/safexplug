@@ -59,7 +59,7 @@
     settings = await window.safex.setSettings({ shareNode: $('shareNode').checked });
     if (panel && panel.docker && panel.docker.container !== 'none') {
       const ok = window.confirm($('shareNode').checked
-        ? 'Open this node to your other devices? The node restarts (up to two minutes). Anyone on your home network or Tailscale could then reach its RPC port. Chain data is not touched.'
+        ? 'Open this node to your other devices? The node restarts (up to two minutes). Anyone on your network could then reach its RPC port. Chain data is not touched.'
         : 'Close the node to other devices? The node restarts (up to two minutes).');
       if (!ok) { $('shareNode').checked = !$('shareNode').checked; settings = await window.safex.setSettings({ shareNode: $('shareNode').checked }); return; }
       await window.safex.nodeAction('reshare');

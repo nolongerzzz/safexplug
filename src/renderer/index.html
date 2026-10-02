@@ -125,7 +125,7 @@
         <div><div class="k">Sync</div><div class="v" id="nPct">—</div></div>
       </div>
       <label class="check"><input id="autostartNode" type="checkbox"> Start node when app opens</label>
-      <label class="check"><input id="shareNode" type="checkbox"> Let my other devices use this node (home network / Tailscale)</label>
+      <label class="check"><input id="shareNode" type="checkbox"> Let my other devices use this node</label>
       <div class="hint" id="shareHint" hidden></div>
     </section>
     <section class="panel" id="maintCard">
@@ -177,7 +177,7 @@
     <section class="panel">
       <label class="check"><input id="shareStats" type="checkbox"> Share this miner's stats so other rigs can add it (read-only, needs the token)</label>
       <div id="shareInfo" class="shareinfo" hidden>
-        <div class="hint">On the other machine, add a miner with this address and token. Use the Tailscale address (starts with 100.) so it works from anywhere without opening your router. Takes effect the next time mining starts.</div>
+        <div class="hint">On the other machine, add a miner with this address and token. Both machines must be able to reach each other on the network. Takes effect the next time mining starts.</div>
         <div class="row">
           <label class="grow">Address<input id="myAddr" type="text" readonly></label>
           <label class="grow">Access token<input id="myToken" type="text" readonly></label>
