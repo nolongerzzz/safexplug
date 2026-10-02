@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.6
+
+- **Shared node is read-and-mine only.** Turning on "share this node" now starts the node with `--restricted-rpc`. Other computers can read chain info and mine against it, but cannot stop it, ban peers, start its own mining or save its database (checked against a real safexd: with the flag every admin call was refused, without it they all worked). The Node tab says whether the shared node is locked. A node that was shared before 3.1.6 is still open with full control until you turn the switch off and on once (the node restarts once).
+
 ## What's new in 3.1.5
 
 - **Solo mode no longer shows shares.** Solo mining has no shares (the miner only submits whole blocks), so the Accepted / Rejected tile is hidden on the Mine tab, and the Rigs tab shows "Blocks (run)" per rig and a "Blocks found (this run)" total instead. Pool mode is unchanged.

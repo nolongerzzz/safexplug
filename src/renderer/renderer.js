@@ -424,8 +424,9 @@
     if (!want) { h.hidden = true; return; }
     h.hidden = false;
     if (panel.docker.container === 'none') h.textContent = 'Will be open to your other devices the first time the node starts.';
-    else if (ex !== 'lan') h.textContent = 'Not open yet. The node restarts when you confirm the switch.';
-    else h.textContent = addrs.length ? 'On your other computer, use this as the node address: ' + addrs.map((a) => a.ip + ':17402 (' + a.label + ')').join('  or  ') : 'Open to your other devices. Use this computer\'s IP address with port 17402.';
+    else if (ex !== 'lan') h.textContent = 'Not open yet. The node restarts when you confirm the switch. Shared access is read-and-mine only: other computers cannot stop, ban or change your node.';
+    else if (panel.docker.restricted === false) h.textContent = 'Open, but with full control. Turn this switch off and on again to lock out admin calls (the node restarts once).';
+    else h.textContent = addrs.length ? 'Open (read and mine only). On your other computer, use this as the node address: ' + addrs.map((a) => a.ip + ':17402 (' + a.label + ')').join('  or  ') : 'Open to your other devices. Use this computer\'s IP address with port 17402.';
   }
   function renderNodePanel() {
     if (!panel) return;

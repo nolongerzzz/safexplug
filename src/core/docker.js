@@ -77,7 +77,7 @@ function runArgs(share) {
   return ['run', '-d', '--name', CONTAINER, '--restart', 'unless-stopped',
     '--stop-timeout', String(STOP_SECONDS),
     '-p', '17401:17401', '-p', share ? '17402:17402' : '127.0.0.1:17402:17402', '-p', '127.0.0.1:17403:17403',
-    '-v', `${VOLUME}:/data`, IMAGE, '--db-sync-mode', 'safe'];
+    '-v', `${VOLUME}:/data`, IMAGE, '--db-sync-mode', 'safe'].concat(share ? ['--restricted-rpc'] : []);
 }
 
 async function startNode(share) {
@@ -98,6 +98,13 @@ async function rpcExposure() {
   const r = await run(['port', CONTAINER, '17402']);
   if (!r.ok || !r.out.trim()) return null;
   return r.out.split('\n').some((l) => /^(0\.0\.0\.0|\[::\]):/.test(l.trim())) ? 'lan' : 'local';
+}
+
+// true when the container was started with --restricted-rpc (admin calls blocked), false when not, null if unknown.
+async function rpcRestricted() {
+  const r = await run(['inspect', '--format', '{{json .Config.Cmd}}', CONTAINER]);
+  if (!r.ok) return null;
+  try { return JSON.parse(r.out.trim()).includes('--restricted-rpc'); } catch (_) { return null; }
 }
 
 // Port bindings are fixed when a container is created, so changing them means
@@ -200,6 +207,7 @@ const installDockerLinux = () => pkexecScript(LINUX_INSTALL_SCRIPT);
 const startDockerEngineLinux = () => pkexecScript(LINUX_START_SCRIPT);
 
 module.exports = {
+  rpcRestricted,
   run, Streamer, CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode, rpcExposure, recreateNode,
   buildImage, followLogs, installPlan, installDockerLinux, startDockerEngineLinux,
   LINUX_INSTALL_SCRIPT, LINUX_START_SCRIPT,

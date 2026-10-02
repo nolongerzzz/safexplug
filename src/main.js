@@ -83,6 +83,7 @@ async function pollDocker() {
   if (nodeBusy) { sendPanel(); return; }
   dockerStatus = await docker.status();
   dockerStatus.exposure = dockerStatus.container === 'none' ? null : await docker.rpcExposure();
+  dockerStatus.restricted = dockerStatus.exposure === 'lan' ? await docker.rpcRestricted() : null;
   manageLogs();
   sendPanel();
 }
