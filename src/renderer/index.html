@@ -34,7 +34,7 @@
     <div class="tile status"><span id="light" class="light off"></span><div><div class="k">Status</div><div class="v" id="statusText">Stopped</div></div></div>
     <div class="tile"><div class="k">Hashrate</div><div class="v big" id="hashrate">—</div></div>
     <div class="tile"><div class="k">Threads</div><div class="v" id="threads">—</div></div>
-    <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="shares">0 / 0</div></div>
+    <div class="tile" id="tileShares"><div class="k">Accepted / Rejected</div><div class="v" id="shares">0 / 0</div></div>
     <div class="tile" title="All-time blocks paid to your address (from your wallet). Small text shows blocks found by this machine since mining last started."><div class="k">Blocks found</div><div class="v" id="blocks">0</div><div class="sub" id="blocksSub"></div></div>
     <div class="tile" id="expTile" title="Average time for this machine to find a block solo, from your hashrate and the network difficulty."><div class="k">Expected block</div><div class="v" id="expTime">—</div><div class="sub" id="expSub"></div></div>
   </section>
@@ -160,12 +160,12 @@
     <section class="strip rigstrip">
       <div class="tile"><div class="k">Combined hashrate</div><div class="v big" id="cHs">—</div></div>
       <div class="tile"><div class="k">Rigs mining</div><div class="v" id="cOnline">0</div></div>
-      <div class="tile"><div class="k">Accepted / Rejected</div><div class="v" id="cShares">0 / 0</div></div>
+      <div class="tile"><div class="k" id="cSharesK">Accepted / Rejected</div><div class="v" id="cShares">0 / 0</div></div>
       <div class="tile" title="Average time for all your rigs together to find a block solo."><div class="k">Expected block (all)</div><div class="v" id="cExp">—</div><div class="sub" id="cExpSub"></div></div>
     </section>
     <section class="panel">
       <table class="rigtable" id="rigTable">
-        <thead><tr><th>Miner</th><th>Status</th><th>Now</th><th>1 h</th><th>6 h</th><th>24 h</th><th>Shares</th><th>Uptime</th><th></th></tr></thead>
+        <thead><tr><th>Miner</th><th>Status</th><th>Now</th><th>1 h</th><th>6 h</th><th>24 h</th><th id="thShares">Shares</th><th>Uptime</th><th></th></tr></thead>
         <tbody id="rigBody"></tbody>
       </table>
       <div id="mainBox" class="hint"></div>

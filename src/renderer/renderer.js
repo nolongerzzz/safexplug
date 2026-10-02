@@ -76,6 +76,7 @@
     $('modePool').className = solo ? '' : 'sel';
     $('modeSolo').className = solo ? 'sel' : '';
     $('poolRow').hidden = solo;
+    $('tileShares').hidden = solo;
     if (typeof renderExpected === 'function') renderExpected();
     $('soloRow').hidden = !solo;
     $('gateWrap').hidden = !solo;
@@ -150,6 +151,8 @@
     $('hashrate').textContent = fmtHs(stats.hashrate);
     $('threads').textContent = stats.threads ?? '—';
     $('shares').textContent = `${stats.accepted || 0} / ${stats.rejected || 0}`;
+    // Solo mining has no shares: "accepted" would only repeat the blocks-this-run count, so hide the tile.
+    $('tileShares').hidden = settings.mode === 'solo';
     const run = stats.blocks || 0;
     if (payCount != null) { $('blocks').textContent = Math.max(payCount, run); $('blocksSub').textContent = 'this run: ' + run; }
     else { $('blocks').textContent = run; $('blocksSub').textContent = 'this run'; }
@@ -492,6 +495,8 @@
   const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
   // ✓ green = answering and hashing, ✗ red = down, ! amber = answering but not hashing / needs attention
   const MARK = { ok: ['✓', 'Mining'], bad: ['✗', 'Not responding'], warn: ['!', 'Needs a look'] };
+  // Pool mining counts shares (accepted / rejected). Solo has no shares: show blocks found this run, and rejected only if any.
+  function fmtShares(a, r) { return settings.mode === 'solo' ? String(a) + (r ? ` (${r} rejected)` : '') : `${a} / ${r}`; }
   function nameCell(tr, name, mark) {
     const td = document.createElement('td');
     const a = document.createElement('div'); a.className = 'rname';
@@ -516,7 +521,7 @@
     nameCell(me, settings.name ? `${settings.name} · this machine` : 'This machine', running && stats.connected ? 'ok' : running ? 'warn' : 'bad'); const st = cell(me, ''); pill(st, running ? (stats.connected ? 'mining' : 'connecting') : 'stopped', running && stats.connected ? 'on' : 'warn');
     { const c = cell(me, running ? fmtHs(stats.hashrate) : '—', 'num'); if (stats.threads) c.title = `${stats.threads} threads`; }
     avgCells(me, selfAvg);
-    cell(me, `${stats.accepted || 0} / ${stats.rejected || 0}`, 'num'); cell(me, '—'); cell(me, '');
+    cell(me, fmtShares(stats.accepted || 0, stats.rejected || 0), 'num'); cell(me, '—'); cell(me, '');
     body.appendChild(me);
     let hs = running ? (stats.hashrate || 0) : 0, acc = running ? (stats.accepted || 0) : 0, rej = running ? (stats.rejected || 0) : 0, online = running && stats.connected ? 1 : 0;
     rigRows.forEach((r, i) => {
@@ -531,7 +536,7 @@
       else pill(td, 'mining', 'on');
       { const c = cell(tr, r.online ? fmtHs(r.hashrate) : '—', 'num'); const tip = []; if (r.threads) tip.push(`${r.threads} threads`); if (r.hashesTotal) tip.push(`${r.hashesTotal.toLocaleString()} hashes this run`); if (tip.length) c.title = tip.join(' · '); }
       avgCells(tr, r.avg);
-      cell(tr, r.online ? `${r.accepted} / ${r.rejected}` : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
+      cell(tr, r.online ? fmtShares(r.accepted, r.rejected) : '—', 'num'); cell(tr, r.online ? fmtUp(r.uptime) : '—');
       const x = cell(tr, ''); const b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Remove';
       b.onclick = async () => { if (r.reported) await window.safex.rigForget(r.id); else settings = await window.safex.setSettings({ rigs: settings.rigs.filter((_, j) => j !== i) }); };
       if (!r.remote) x.appendChild(b); body.appendChild(tr);
@@ -539,7 +544,7 @@
     });
     setRigBadge(rigProblems(rigRows));
     { const e = expectedParts(hs || null); $('cExp').textContent = e.time; $('cExpSub').textContent = e.sub; }
-    $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = `${acc} / ${rej}`;
+    $('cHs').textContent = fmtHs(hs || null); $('cOnline').textContent = `${online} of ${rigRows.length + 1}`; $('cShares').textContent = fmtShares(acc, rej); $('cSharesK').textContent = settings.mode === 'solo' ? 'Blocks found (this run)' : 'Accepted / Rejected'; $('thShares').textContent = settings.mode === 'solo' ? 'Blocks (run)' : 'Shares';
     $('collect').checked = !!settings.collect; $('reportTo').value = settings.reportTo || '';
     $('collectHint').textContent = settings.collect ? 'Your other rigs find this computer by themselves and appear in the list above. Rigs at other locations: type this computer\'s address under Advanced on that rig.' : 'Tick this on ONE computer only (your main one). Every other rig then finds it automatically, with nothing to copy.';
     if (settings.collect) $('mainBox').textContent = rigRows.some((r) => r.reported) ? '' : 'Waiting for rigs. Open this app on your other computers and they will appear here within a few seconds.';

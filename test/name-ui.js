@@ -12,6 +12,10 @@ app.whenReady().then(async () => {
   for (const m of ['modePool', 'modeSolo']) {
     await js(`document.getElementById('${m}').click()`); await wait(400);
     console.log(m, JSON.stringify(await js(vis)));
+    await js(`document.getElementById('tabBtnRigs').click()`); await wait(900);
+    console.log(m, 'rigs:', JSON.stringify(await js(`({tile:document.getElementById('cSharesK').textContent, th:document.getElementById('thShares').textContent})`)));
+    await js(`document.getElementById('tabBtnMine').click()`); await wait(300);
+    console.log(m, 'shares tile hidden:', await js(`document.getElementById('tileShares').hidden`));
   }
   await js(`(()=>{const e=document.getElementById('name'); e.value='Test Rig'; e.dispatchEvent(new Event('change'))})()`); await wait(500);
   console.log('saved name:', await js(`window.safex.setSettings({}).then(s=>s.name)`));

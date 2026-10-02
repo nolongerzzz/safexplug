@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.5
+
+- **Solo mode no longer shows shares.** Solo mining has no shares (the miner only submits whole blocks), so the Accepted / Rejected tile is hidden on the Mine tab, and the Rigs tab shows "Blocks (run)" per rig and a "Blocks found (this run)" total instead. Pool mode is unchanged.
+
 ## What's new in 3.1.4
 
 - **The rig name box is always visible.** It used to live in the Pool row, which solo mode hides, so solo miners could not find it. It now has its own row ("Rig name") under the address in both modes.
