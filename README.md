@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.1
+
+- **Mac solo mining fix.** The stock xmrig engine bundled for Mac cannot solo mine against a Safex node ("Invalid block template received from daemon"); Linux uses Safex's patched fork. `tools/build-mac-xmrig.sh` builds the patched engine on the Mac (installs Apple's command line tools and Homebrew packages if missing, applies `tools/xmrig-sfx.patch` to xmrig 6.26.0, builds, installs into the app). Run it once from the app folder, then `npm install` and `npm start`.
+
 ## What's new in 3.1.0
 
 - **Rigs report in. No tokens, no addresses.** On your main computer, open the Rigs tab and tick "This is my main computer". Every other copy of the app on the same network finds it automatically and shows up in the list within seconds, mining or stopped, and turns red if it goes quiet. It works the way a pool worker reports to a pool: the rigs send their numbers out, nothing reaches into them.
