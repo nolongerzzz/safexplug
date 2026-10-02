@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.7
+
+- **Clearer node addresses.** The share hint lists each address on its own line and says who can use it: "only computers on this same network", "VPN address: works from anywhere the VPN is on", or "public internet address". It used to label every address "Network". Wording now says "checkbox" instead of "switch".
+
 ## What's new in 3.1.6
 
 - **Shared node is read-and-mine only.** Turning on "share this node" now starts the node with `--restricted-rpc`. Other computers can read chain info and mine against it, but cannot stop it, ban peers, start its own mining or save its database (checked against a real safexd: with the flag every admin call was refused, without it they all worked). The Node tab says whether the shared node is locked. A node that was shared before 3.1.6 is still open with full control until you turn the switch off and on once (the node restarts once).

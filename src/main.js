@@ -70,14 +70,21 @@ function manageLogs() {
     logStream.on('exit', () => { logStream = null; });
   } else if (!want && logStream) { logStream.stop(); logStream = null; }
 }
-// Addresses another device can use to reach this node (home network).
+// Addresses another device can use to reach this node, each labelled by who can use it.
+function addrKind(ip) {
+  const [a, b] = ip.split('.').map(Number);
+  if (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) return { label: 'only computers on this same network', order: 0 };
+  if (a === 100 && b >= 64 && b <= 127) return { label: 'VPN address: works from anywhere the VPN is on', order: 1 };
+  if (a === 169 && b === 254) return null;
+  return { label: 'public internet address', order: 2 };
+}
 function shareAddrs() {
   const out = [];
   for (const [name, list] of Object.entries(os.networkInterfaces())) for (const a of list || []) {
     if (a.family !== 'IPv4' || a.internal || /^(docker|br-|veth|virbr)/.test(name)) continue;
-    out.push({ ip: a.address, label: 'Network' });
+    const k = addrKind(a.address); if (k) out.push({ ip: a.address, label: k.label, order: k.order });
   }
-  return out;
+  return out.sort((x, y) => x.order - y.order).map(({ ip, label }) => ({ ip, label }));
 }
 async function pollDocker() {
   if (nodeBusy) { sendPanel(); return; }

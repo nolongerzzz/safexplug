@@ -154,3 +154,5 @@ input[readonly]{opacity:.85}
 details.adv>summary{cursor:pointer;color:var(--mute);font-size:13px}
 details.adv[open]>summary{margin-bottom:10px}
 details.adv{gap:0}
+
+#shareHint{white-space:pre-line}
