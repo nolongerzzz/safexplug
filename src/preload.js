@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('safex', {
   exRecent: (n, before) => ipcRenderer.invoke('explorer:recent', n, before),
   exBlock: (q) => ipcRenderer.invoke('explorer:block', q),
   exTx: (h) => ipcRenderer.invoke('explorer:tx', h),
+  walletAppFind: () => ipcRenderer.invoke('walletapp:find'),
+  walletAppLaunch: () => ipcRenderer.invoke('walletapp:launch'),
   exPool: () => ipcRenderer.invoke('explorer:pool'),
   rigForget: (id) => ipcRenderer.invoke('rigs:forget', id),
   reportStatus: () => ipcRenderer.invoke('rigs:report-status'),

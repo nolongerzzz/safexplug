@@ -11,6 +11,7 @@ const maint = require('./core/maintenance');
 const wallet = require('./core/wallet');
 const wsetup = require('./core/walletsetup');
 const explorer = require('./core/explorer');
+const walletapp = require('./core/walletapp');
 const { Collector, Reporter } = require('./core/reporter');
 const { HashLog } = require('./core/hashlog');
 const crypto = require('crypto');
@@ -443,6 +444,8 @@ app.whenReady().then(() => {
   ipcMain.handle('explorer:recent', async (_e, count, before) => { const r = await exploreCall((h) => explorer.recent(h, Number(count) || 20, before == null ? null : Number(before))); return { ...r, mine: mineHeights() }; });
   ipcMain.handle('explorer:block', async (_e, q) => { const r = await exploreCall((h) => explorer.block(h, String(q || ''))); return { ...r, mine: mineHeights() }; });
   ipcMain.handle('explorer:tx', (_e, hash) => exploreCall((h) => explorer.tx(h, String(hash || ''))));
+  ipcMain.handle('walletapp:find', () => walletapp.find({ chosen: (settings.get() || {}).walletAppDir || '' }));
+  ipcMain.handle('walletapp:launch', () => { const f = walletapp.find({ chosen: (settings.get() || {}).walletAppDir || '' }); return f.found ? walletapp.launch(f.dir) : { ok: false, error: 'Safex Wallet was not found on this computer.' }; });
   ipcMain.handle('explorer:pool', () => exploreCall((h) => explorer.pool(h)));
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
   ipcMain.handle('rigs:forget', (_e, id) => { collector.forget(String(id || '')); pollRigs(); return true; });

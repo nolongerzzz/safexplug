@@ -320,7 +320,14 @@
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
-    exVisible = name === 'explorer'; if (exVisible) exRefresh(true);
+    exVisible = name === 'explorer';
+    if (name === 'explorer') {
+      // With Safex Wallet installed, the Explorer tab opens it there; without it (or on another system) the built-in explorer stays.
+      window.safex.walletAppFind().then((f) => {
+        $('exLaunch').hidden = !f.found; $('exBuiltin').hidden = !!f.found; exVisible = !f.found;
+        if (f.found) walletOpen(); else exRefresh(true);
+      });
+    }
     $('wsRemove').hidden = name !== 'pay' || !(ws && ws.wallet);
     if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
@@ -328,6 +335,12 @@
   $('tabBtnNode').onclick = () => showTab('node');
   $('tabBtnRigs').onclick = () => showTab('rigs');
   $('tabBtnPay').onclick = () => showTab('pay');
+  async function walletOpen() {
+    $('exLaunchErr').hidden = true; const r = await window.safex.walletAppLaunch();
+    $('exLaunchMsg').textContent = r.ok ? 'Opening the explorer in Safex Wallet. If the wallet asks for your password, enter it once and the Explorer opens. It reads from your node.' : 'The explorer lives in Safex Wallet.';
+    if (!r.ok) { $('exLaunchErr').hidden = false; $('exLaunchErr').textContent = r.error; }
+  }
+  $('exLaunchBtn').onclick = walletOpen;
   $('tabBtnExplorer').onclick = () => showTab('explorer');
 
   // ---- node panel ---------------------------------------------------------
