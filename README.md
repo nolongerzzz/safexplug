@@ -2,6 +2,11 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.9
+
+- Explorer: the search box now takes a **transaction hash** (what a send gives you), as well as a block number or block hash. A transaction page shows whether it is still waiting in the pool or which block it is in, with its confirmations, and an "Open its block" button.
+- Explorer: a **Waiting in the pool** list shows transactions your node has accepted that are not in a block yet. Read-only, like the rest of the Explorer.
+
 ## What's new in 3.1.8
 
 - Mine tab: the status tiles, settings and Start button stay pinned at the top; only the Miner output scrolls underneath. Address and rig name now share one row to save space. On a very short window the tab scrolls as a whole so Start is never hidden.

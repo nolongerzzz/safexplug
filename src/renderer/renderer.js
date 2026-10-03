@@ -241,7 +241,7 @@
     try {
       const r = await window.safex.exRecent(20, null);
       if (!r.ok) { exErr(r.error); return; }
-      exErr(''); exSource(r); exTip = r.tip; exMine = r.mine || [];
+      exErr(''); exSource(r); exTip = r.tip; exMine = r.mine || []; exPoolRefresh();
       if (reset || !exRows.length) exRows = r.blocks;
       else { const low = r.blocks.length ? r.blocks[r.blocks.length - 1].height : 0; exRows = r.blocks.concat(exRows.filter((b) => b.height < low)); }
       $('exMore').hidden = false; exRender();
@@ -259,13 +259,16 @@
     if (copy) { td.style.cursor = 'copy'; td.title = 'Click to copy'; td.onclick = () => window.safex.copyText(copy); }
     body.appendChild(tr);
   }
+  const HEX64 = /^[0-9a-f]{64}$/i;
   async function exOpen(q) {
     q = String(q || '').trim(); if (!q) return;
-    const r = await window.safex.exBlock(q);
+    let r = await window.safex.exBlock(q);
+    // A 64-character hash may be a block hash or a transaction hash (the one people share after a send): try block, then transaction.
+    if (!r.ok && HEX64.test(q)) { const t = await window.safex.exTx(q.toLowerCase()); if (t.ok) return exShowTx(t, true); if (r.error === 'No such block.') r = { ok: false, error: 'No block or transaction with that hash.' }; }
     if (!r.ok) { exErr(r.error); return; }
     exErr(''); exSource(r);
     const h = r.header, mine = (r.mine || []).includes(h.height);
-    $('exList').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false; $('exTxBox').hidden = true;
+    $('exList').hidden = true; $('exPoolBox').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false; $('exTxBox').hidden = true; $('exTxsK').hidden = false; $('exTxs').hidden = false;
     $('exTitle').textContent = 'Block ' + h.height.toLocaleString() + (mine ? ' · paid to your wallet' : '') + (h.orphan ? ' · orphan' : '');
     const f = $('exFacts'); f.textContent = '';
     fact(f, 'Hash', h.hash, h.hash); fact(f, 'Previous', h.prev, h.prev);
@@ -280,14 +283,30 @@
   async function exTx(hash) {
     const r = await window.safex.exTx(hash);
     if (!r.ok) { exErr(r.error); return; }
-    exErr(''); $('exTxBox').hidden = false;
+    exShowTx(r, false);
+  }
+  // alone = opened by searching a transaction hash (no block page behind it), so show it as its own page
+  function exShowTx(r, alone) {
+    exErr(''); $('exTxBox').hidden = false; $('exTxK').hidden = !!alone;
+    if (alone) {
+      $('exList').hidden = true; $('exPoolBox').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false;
+      $('exTitle').textContent = 'Transaction'; $('exTxK').hidden = true; $('exFacts').textContent = ''; $('exTxs').textContent = ''; $('exTxsK').hidden = true; $('exTxs').hidden = true;
+    }
     const f = $('exTxFacts'); f.textContent = '';
-    fact(f, 'Hash', r.hash, r.hash); fact(f, 'Status', r.inPool ? 'Waiting in the pool' : 'In block ' + Number(r.height).toLocaleString());
+    fact(f, 'Hash', r.hash, r.hash);
+    fact(f, 'Status', r.inPool ? 'Waiting in the pool (not in a block yet)' : 'In block ' + Number(r.height).toLocaleString() + (r.confirmations != null ? ' · ' + r.confirmations.toLocaleString() + ' confirmation' + (r.confirmations === 1 ? '' : 's') : ''));
     fact(f, 'Inputs / outputs', r.inputs + ' in, ' + r.outputs + ' out'); fact(f, 'Ring size', String(r.ringSize));
     fact(f, 'Fee', fmtSfx(r.fee)); fact(f, 'Size', exKB(r.size));
     if (r.tokenOutputs) fact(f, 'Token outputs', String(r.tokenOutputs));
+    const bb = $('exTxBlock'); bb.hidden = r.height == null; if (r.height != null) bb.onclick = () => exOpen(String(r.height));
   }
-  function exBackToList() { $('exDetail').hidden = true; $('exList').hidden = false; $('exLatest').hidden = true; exErr(''); exRefresh(false); }
+  async function exPoolRefresh() {
+    const r = await window.safex.exPool(); const box = $('exPool'); box.textContent = '';
+    if (!r.ok || !r.txs.length) { $('exPoolBox').hidden = true; return; }
+    $('exPoolBox').hidden = false; $('exPoolK').textContent = 'Waiting in the pool (' + r.txs.length + ') · not in a block yet';
+    for (const t of r.txs) { const a = document.createElement('button'); a.className = 'mini txbtn'; a.textContent = t.hash; a.title = exAge(t.time) + ' ago'; a.onclick = () => exOpen(t.hash); box.appendChild(a); }
+  }
+  function exBackToList() { $('exDetail').hidden = true; $('exList').hidden = false; $('exTxBox').hidden = true; $('exLatest').hidden = true; exErr(''); exRefresh(false); }
   $('exGo').onclick = () => exOpen($('exQ').value);
   $('exQ').onkeydown = (e) => { if (e.key === 'Enter') exOpen($('exQ').value); };
   $('exBack').onclick = exBackToList; $('exLatest').onclick = () => { $('exQ').value = ''; exBackToList(); };

@@ -164,3 +164,4 @@ details.adv{gap:0}
 #mineView>.viewport{flex:1 1 0;min-height:150px}
 /* window too short for both: scroll the whole tab (output keeps a fixed height) rather than hide Start */
 @media(max-height:700px){#mineView{overflow-y:auto}#mineView>.viewport{flex:0 0 220px}}
+#exTxBlock{margin-top:10px;align-self:flex-start}

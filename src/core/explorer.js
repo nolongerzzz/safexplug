@@ -48,7 +48,7 @@ async function block(host, query) {
   else if (HEX64.test(q)) params = { hash: q.toLowerCase() };
   else return { ok: false, error: 'Enter a block number or a 64-character block hash.' };
   const r = await rpc(host, 'get_block', params);
-  if (!r.ok) return { ok: false, error: /too big|invalid|not found|wrong/i.test(r.error) ? 'No such block.' : r.error };
+  if (!r.ok) return { ok: false, error: /too big|invalid|not found|wrong|can'?t get block/i.test(r.error) ? 'No such block.' : r.error };
   const res = r.result; const h = header(res.block_header); if (!h) return { ok: false, error: 'No such block.' };
   const p = parseBlockJson(res.json);
   return { ok: true, header: h, minerTx: res.miner_tx_hash || '', txHashes: p.txHashes || res.tx_hashes || [], coinbase: { outputs: p.minerOutputs ?? null, cash: p.minerCash ?? null, tokens: p.minerTokens ?? null } };
@@ -82,10 +82,23 @@ async function tx(host, hash) {
   const vin = Array.isArray(j.vin) ? j.vin : [], vout = Array.isArray(j.vout) ? j.vout : [];
   const first = vin[0] && vin[0].key;
   const hex = (t && t.as_hex) || (r.json.txs_as_hex && r.json.txs_as_hex[0]) || '';
+  const height = t && t.block_height != null && !t.in_pool ? Number(t.block_height) : null;
+  let confirmations = null;
+  if (height != null) { const tip = await tipHeight(host); if (tip.ok) confirmations = Math.max(0, tip.height - height + 1); }
   const fee = j.rct_signatures && j.rct_signatures.txnFee !== undefined ? Number(j.rct_signatures.txnFee) / ATOMIC : null;
   return { ok: true, hash: h, inputs: vin.length, outputs: vout.length, ringSize: first && Array.isArray(first.key_offsets) ? first.key_offsets.length : null,
-    size: hex ? hex.length / 2 : null, fee, height: t && t.block_height != null ? Number(t.block_height) : null, inPool: !!(t && t.in_pool),
+    size: hex ? hex.length / 2 : null, fee, height, confirmations, inPool: !!(t && t.in_pool),
     tokenOutputs: vout.filter((o) => Number(o.token_amount) > 0).length };
 }
 
-module.exports = { recent, block, tx, parseBlockJson, header, tipHeight };
+// Transactions the node has accepted but no block has included yet (newest first).
+async function pool(host) {
+  const r = await post(host, '/get_transaction_pool', {});
+  if (!r.ok) return { ok: false, error: r.error };
+  const list = Array.isArray(r.json.transactions) ? r.json.transactions : [];
+  const txs = list.filter((x) => x && HEX64.test(String(x.id_hash || ''))).map((x) => ({ hash: String(x.id_hash).toLowerCase(), size: Number(x.blob_size) || 0,
+    fee: (Number(x.fee) || 0) / ATOMIC, time: Number(x.receive_time) || 0 })).sort((a, b) => b.time - a.time).slice(0, 50);
+  return { ok: true, txs };
+}
+
+module.exports = { recent, block, tx, pool, parseBlockJson, header, tipHeight };

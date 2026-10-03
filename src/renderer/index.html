@@ -235,12 +235,16 @@
   <div id="explorerView" class="view" hidden>
     <section class="panel">
       <div class="row">
-        <label class="grow">Find a block<input id="exQ" type="text" spellcheck="false" placeholder="Block number or 64-character block hash"></label>
+        <label class="grow">Find a transaction or block<input id="exQ" type="text" spellcheck="false" placeholder="Transaction hash, block number or block hash"></label>
         <button id="exGo" class="mini big">Search</button>
         <button id="exLatest" class="mini big" hidden>Back to latest</button>
       </div>
       <div class="hint" id="exSrc"></div>
       <div class="err" id="exErr" hidden></div>
+    </section>
+    <section class="panel" id="exPoolBox" hidden>
+      <div class="k" id="exPoolK">Waiting in the pool</div>
+      <div id="exPool" class="txlist"></div>
     </section>
     <section class="panel" id="exList">
       <table class="rigtable"><thead><tr><th>Height</th><th>Age</th><th>Hash</th><th>Txs</th><th>Size</th><th>Reward</th><th></th></tr></thead><tbody id="exBody"></tbody></table>
@@ -249,9 +253,9 @@
     <section class="panel" id="exDetail" hidden>
       <div class="row"><b id="exTitle"></b><span class="spacer"></span><button id="exBack" class="mini">Back to list</button></div>
       <table class="rigtable kv"><tbody id="exFacts"></tbody></table>
-      <div class="k">Transactions in this block</div>
+      <div class="k" id="exTxsK">Transactions in this block</div>
       <div id="exTxs" class="txlist"></div>
-      <div id="exTxBox" hidden><div class="k">Transaction</div><table class="rigtable kv"><tbody id="exTxFacts"></tbody></table></div>
+      <div id="exTxBox" hidden><div class="k" id="exTxK">Transaction</div><table class="rigtable kv"><tbody id="exTxFacts"></tbody></table><button id="exTxBlock" class="mini" hidden>Open its block</button></div>
     </section>
   </div>
   <footer id="foot"></footer>

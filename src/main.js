@@ -443,6 +443,7 @@ app.whenReady().then(() => {
   ipcMain.handle('explorer:recent', async (_e, count, before) => { const r = await exploreCall((h) => explorer.recent(h, Number(count) || 20, before == null ? null : Number(before))); return { ...r, mine: mineHeights() }; });
   ipcMain.handle('explorer:block', async (_e, q) => { const r = await exploreCall((h) => explorer.block(h, String(q || ''))); return { ...r, mine: mineHeights() }; });
   ipcMain.handle('explorer:tx', (_e, hash) => exploreCall((h) => explorer.tx(h, String(hash || ''))));
+  ipcMain.handle('explorer:pool', () => exploreCall((h) => explorer.pool(h)));
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
   ipcMain.handle('rigs:forget', (_e, id) => { collector.forget(String(id || '')); pollRigs(); return true; });
   ipcMain.handle('rigs:report-status', () => ({ collect: settings.get().collect, last: reporter.last, target: reporter.target() }));
