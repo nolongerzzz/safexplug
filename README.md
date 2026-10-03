@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.1
+
+- New SAFEX HOMEBASE (Node+Mine edition) app icon. After rebuilding the package it also shows on the full-speed menu entry.
+
 ## What's new in 3.3.0
 
 - **The Explorer tab is gone; there is a Wallet button instead.** It jumps to Safex Wallet: if the wallet is already open it is simply brought forward, and if it is closed it starts and asks for your login. The miner stays on the tab you were on. The block explorer now lives in the wallet, which makes the miner and node app lighter. If the wallet is not installed (or on a Mac), the Wallet tab says so.
