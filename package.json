@@ -1,7 +1,7 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Safex Community Miner",
   "main": "src/main.js",
   "scripts": {
@@ -43,7 +43,11 @@
       ],
       "icon": "src/public/images/icon.png",
       "category": "Utility",
-      "maintainer": "Safex community <noreply@example.invalid>"
+      "maintainer": "Safex community <noreply@example.invalid>",
+      "desktop": {
+        "Name": "Safex HomeBase Node+Mine",
+        "Comment": "Safex Cash mining and node, with your own wallet one click away"
+      }
     },
     "asar": false,
     "productName": "Safex Community Miner",
