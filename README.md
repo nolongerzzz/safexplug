@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.2.1
+
+- Explorer tab: when the miner was started by the full-speed launcher (which runs it as root), it now looks for Safex Wallet in your own home folder and starts the wallet as you, not as root.
+
 ## What's new in 3.2.0
 
 - **Explorer tab opens Safex Wallet.** If Safex Wallet is installed in your home folder (`~/safex-wallet`), the Explorer tab starts it on its Explorer. The explorer now lives in the wallet, which reads from your own node. If the wallet is not installed, or on a Mac, the built-in explorer stays exactly as before.

@@ -19,4 +19,15 @@ t('launch starts electron in that folder with --explorer, detached', () => {
   assert.ok(r.ok); assert.ok(got.cmd.endsWith('node_modules/.bin/electron')); assert.ok(got.args.includes('--explorer')); assert.strictEqual(got.opts.cwd, x.d); assert.strictEqual(got.opts.detached, true);
 });
 t('launch failure is reported, not thrown', () => { const r = W.launch('/nope', () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); }); assert.ok(!r.ok); assert.ok(/ENOENT/.test(r.error)); });
+t('under sudo the person\'s own home is searched, not root\'s', () => {
+  const x = mk('safex-wallet'); const pw = path.join(x.home, 'passwd'); fs.writeFileSync(pw, `root:x:0:0:root:/root:/bin/bash\nzach:x:1000:1000:Z:${x.home}:/bin/bash\n`);
+  const u = W.realUser({ SUDO_USER: 'zach', SUDO_UID: '1000', SUDO_GID: '1000' }, pw, true);
+  assert.deepStrictEqual([u.name, u.uid, u.gid, u.home], ['zach', 1000, 1000, x.home]);
+  assert.strictEqual(W.find({ env: {}, platform: 'linux', user: u }).dir, x.d);
+  assert.strictEqual(W.realUser({ SUDO_USER: 'zach' }, pw, false), null);
+});
+t('launched from root, the wallet starts as the person, with their home, not as root', () => {
+  const x = mk('safex-wallet'); let got; W.launch(x.d, (c, a, o) => { got = o; return { unref() {}, on() {} }; }, { name: 'zach', uid: 1000, gid: 1000, home: '/home/zach' });
+  assert.strictEqual(got.uid, 1000); assert.strictEqual(got.gid, 1000); assert.strictEqual(got.env.HOME, '/home/zach'); assert.ok(!('SUDO_USER' in got.env));
+});
 console.log(n + ' tests passed');
