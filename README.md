@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.1.8
+
+- Mine tab: the status tiles, settings and Start button stay pinned at the top; only the Miner output scrolls underneath. Address and rig name now share one row to save space. On a very short window the tab scrolls as a whole so Start is never hidden.
+
 ## What's new in 3.1.7
 
 - **Clearer node addresses.** The share hint lists each address on its own line and says who can use it: "only computers on this same network", "VPN address: works from anywhere the VPN is on", or "public internet address". It used to label every address "Network". Wording now says "checkbox" instead of "switch".

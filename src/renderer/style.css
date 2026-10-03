@@ -156,3 +156,11 @@ details.adv[open]>summary{margin-bottom:10px}
 details.adv{gap:0}
 
 #shareHint{white-space:pre-line}
+
+/* Mine tab: status, settings and Start button stay pinned on top; only the miner output scrolls */
+#mineView{overflow:hidden}
+#mineView .core{display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+#mineView .core .panel{gap:10px;padding:12px}
+#mineView>.viewport{flex:1 1 0;min-height:150px}
+/* window too short for both: scroll the whole tab (output keeps a fixed height) rather than hide Start */
+@media(max-height:700px){#mineView{overflow-y:auto}#mineView>.viewport{flex:0 0 220px}}

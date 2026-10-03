@@ -30,6 +30,7 @@
   </nav>
 
   <div id="mineView" class="view">
+  <div class="core">
   <section class="strip" aria-label="Mining status">
     <div class="tile status"><span id="light" class="light off"></span><div><div class="k">Status</div><div class="v" id="statusText">Stopped</div></div></div>
     <div class="tile"><div class="k">Hashrate</div><div class="v big" id="hashrate">—</div></div>
@@ -48,12 +49,11 @@
       <button id="modeSolo" role="tab">My Node (solo)</button>
     </div>
 
-    <label>Safex address (public address only)
-      <input id="address" type="text" spellcheck="false" autocomplete="off" placeholder="Safex…">
-    </label>
-
     <div class="row" id="nameRow">
-      <label class="grow">Rig name (shown on your Rigs list)
+      <label class="grow" style="flex:3 1 280px">Safex address (public address only)
+        <input id="address" type="text" spellcheck="false" autocomplete="off" placeholder="Safex…">
+      </label>
+      <label class="grow" style="flex:1 1 150px">Rig name (shown on your Rigs list)
         <input id="name" type="text" placeholder="e.g. Ryzen, MacBook">
       </label>
     </div>
@@ -97,6 +97,7 @@
     <button id="go" class="go">Start mining</button>
     <div id="error" class="error" hidden></div>
   </section>
+  </div>
 
   <section class="viewport">
     <div class="vp-head">
