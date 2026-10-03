@@ -1,5 +1,5 @@
 'use strict';
-// Finds the Safex Wallet app on this computer and starts it on its Explorer tab.
+// Finds the Safex Wallet app on this computer and starts it tab.
 // The wallet runs as its own program, so the miner only launches it; nothing is shared between them but the node.
 const fs = require('fs'), path = require('path'), os = require('os');
 const { spawn } = require('child_process');
@@ -37,12 +37,12 @@ function find({ chosen = '', home, env = process.env, platform = process.platfor
 }
 
 // Starts the wallet in its folder, the same way "npm start" does, detached so closing the miner does not close it.
-// If the wallet is already running, the second start just brings it forward and opens its Explorer.
+// If the wallet is already running, the second start just brings that window forward; if not, it opens at its login.
 function launch(dir, spawnFn = spawn, user = realUser()) {
   try {
     const opts = { cwd: dir, detached: true, stdio: 'ignore' };
     if (user) { opts.uid = user.uid; opts.gid = user.gid; opts.env = { ...process.env, HOME: user.home, USER: user.name, LOGNAME: user.name }; delete opts.env.SUDO_USER; delete opts.env.SUDO_UID; delete opts.env.SUDO_GID; }
-    const child = spawnFn(path.join(dir, 'node_modules', '.bin', 'electron'), ['.', '--no-sandbox', '--explorer'], opts);
+    const child = spawnFn(path.join(dir, 'node_modules', '.bin', 'electron'), ['.', '--no-sandbox'], opts);
     child.on && child.on('error', () => {});
     child.unref && child.unref();
     return { ok: true };

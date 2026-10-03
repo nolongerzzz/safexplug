@@ -8,7 +8,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 app.whenReady().then(async () => {
   const win = BrowserWindow.getAllWindows()[0]; const wc = win.webContents; const js = (c) => wc.executeJavaScript(c);
   win.setSize(800, 480); await wait(1200);
-  for (const t of ['Mine', 'Node', 'Rigs', 'Pay', 'Explorer']) {
+  for (const t of ['Mine', 'Node', 'Rigs', 'Pay', 'Wallet']) {
     await js(`document.getElementById('tabBtn${t}').click()`); await wait(700);
     const r = await js(`(()=>{const v=[...document.querySelectorAll('.view')].find(x=>!x.hidden); v.scrollTop=100000; return {sh:v.scrollHeight, ch:v.clientHeight, top:Math.round(v.scrollTop), tabsW:document.querySelector('.tabs').scrollWidth+'/'+document.querySelector('.tabs').clientWidth}})()`);
     console.log(t, JSON.stringify(r));

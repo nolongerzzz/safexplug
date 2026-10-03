@@ -215,119 +215,14 @@
   };
 
 
-  // ---- light explorer -----------------------------------------------------
-  let exVisible = false, exRows = [], exTip = 0, exMine = [], exBusy = false;
-  const exShort = (h) => h ? h.slice(0, 10) + '…' + h.slice(-8) : '';
-  const exAge = (t) => { const d = Math.max(0, Math.floor(Date.now() / 1000 - t)); return d < 90 ? d + ' s' : d < 5400 ? Math.round(d / 60) + ' min' : d < 172800 ? Math.round(d / 3600) + ' h' : Math.round(d / 86400) + ' d'; };
-  const exKB = (n) => (n / 1024).toFixed(1) + ' KB';
-  function exCell(tr, text, cls) { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; }
-  function exErr(msg) { $('exErr').hidden = !msg; $('exErr').textContent = msg || ''; }
-  function exSource(r) { $('exSrc').textContent = r && r.source ? (r.source === 'local' ? 'Reading from your own node.' : 'Your node is not answering, so this is read from the public Safex node.') : ''; }
-  function exRender() {
-    const body = $('exBody'); body.textContent = '';
-    for (const b of exRows) {
-      const tr = document.createElement('tr'); tr.style.cursor = 'pointer'; tr.title = 'Open block ' + b.height;
-      if (exMine.includes(b.height)) tr.className = 'me';
-      exCell(tr, b.height.toLocaleString(), 'num'); exCell(tr, exAge(b.time) + ' ago'); exCell(tr, exShort(b.hash)).title = b.hash;
-      exCell(tr, String(b.txs), 'num'); exCell(tr, exKB(b.size), 'num'); exCell(tr, fmtSfx(b.reward), 'num');
-      exCell(tr, exMine.includes(b.height) ? 'yours' : '');
-      tr.onclick = () => exOpen(String(b.height));
-      body.appendChild(tr);
-    }
-  }
-  async function exRefresh(reset) {
-    if (exBusy || !exVisible || !$('exDetail').hidden) return;
-    exBusy = true;
-    try {
-      const r = await window.safex.exRecent(20, null);
-      if (!r.ok) { exErr(r.error); return; }
-      exErr(''); exSource(r); exTip = r.tip; exMine = r.mine || []; exPoolRefresh();
-      if (reset || !exRows.length) exRows = r.blocks;
-      else { const low = r.blocks.length ? r.blocks[r.blocks.length - 1].height : 0; exRows = r.blocks.concat(exRows.filter((b) => b.height < low)); }
-      $('exMore').hidden = false; exRender();
-    } finally { exBusy = false; }
-  }
-  $('exMore').onclick = async () => {
-    if (!exRows.length) return;
-    const r = await window.safex.exRecent(20, exRows[exRows.length - 1].height);
-    if (!r.ok) { exErr(r.error); return; }
-    exErr(''); exRows = exRows.concat(r.blocks); exMine = r.mine || exMine; exRender();
-    if (!r.blocks.length) $('exMore').hidden = true;
-  };
-  function fact(body, k, v, copy) {
-    const tr = document.createElement('tr'); exCell(tr, k).className = 'k'; const td = exCell(tr, v); td.style.whiteSpace = 'normal'; td.style.wordBreak = 'break-all';
-    if (copy) { td.style.cursor = 'copy'; td.title = 'Click to copy'; td.onclick = () => window.safex.copyText(copy); }
-    body.appendChild(tr);
-  }
-  const HEX64 = /^[0-9a-f]{64}$/i;
-  async function exOpen(q) {
-    q = String(q || '').trim(); if (!q) return;
-    let r = await window.safex.exBlock(q);
-    // A 64-character hash may be a block hash or a transaction hash (the one people share after a send): try block, then transaction.
-    if (!r.ok && HEX64.test(q)) { const t = await window.safex.exTx(q.toLowerCase()); if (t.ok) return exShowTx(t, true); if (r.error === 'No such block.') r = { ok: false, error: 'No block or transaction with that hash.' }; }
-    if (!r.ok) { exErr(r.error); return; }
-    exErr(''); exSource(r);
-    const h = r.header, mine = (r.mine || []).includes(h.height);
-    $('exList').hidden = true; $('exPoolBox').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false; $('exTxBox').hidden = true; $('exTxsK').hidden = false; $('exTxs').hidden = false;
-    $('exTitle').textContent = 'Block ' + h.height.toLocaleString() + (mine ? ' · paid to your wallet' : '') + (h.orphan ? ' · orphan' : '');
-    const f = $('exFacts'); f.textContent = '';
-    fact(f, 'Hash', h.hash, h.hash); fact(f, 'Previous', h.prev, h.prev);
-    fact(f, 'Time', new Date(h.time * 1000).toLocaleString() + ' (' + exAge(h.time) + ' ago)');
-    fact(f, 'Difficulty', Number(h.difficulty).toLocaleString()); fact(f, 'Reward', fmtSfx(h.reward));
-    fact(f, 'Size', exKB(h.size)); fact(f, 'Confirmations', Number(h.depth).toLocaleString()); fact(f, 'Nonce', String(h.nonce));
-    if (r.coinbase) fact(f, 'Coinbase', r.coinbase.outputs + ' output(s), ' + fmtSfx(r.coinbase.cash) + (r.coinbase.tokens ? ' + ' + r.coinbase.tokens + ' tokens' : ''));
-    const box = $('exTxs'); box.textContent = '';
-    if (!r.txHashes.length) box.textContent = 'No transactions besides the coinbase.';
-    for (const t of r.txHashes) { const a = document.createElement('button'); a.className = 'mini txbtn'; a.textContent = t; a.onclick = () => exTx(t); box.appendChild(a); }
-  }
-  async function exTx(hash) {
-    const r = await window.safex.exTx(hash);
-    if (!r.ok) { exErr(r.error); return; }
-    exShowTx(r, false);
-  }
-  // alone = opened by searching a transaction hash (no block page behind it), so show it as its own page
-  function exShowTx(r, alone) {
-    exErr(''); $('exTxBox').hidden = false; $('exTxK').hidden = !!alone;
-    if (alone) {
-      $('exList').hidden = true; $('exPoolBox').hidden = true; $('exDetail').hidden = false; $('exLatest').hidden = false;
-      $('exTitle').textContent = 'Transaction'; $('exTxK').hidden = true; $('exFacts').textContent = ''; $('exTxs').textContent = ''; $('exTxsK').hidden = true; $('exTxs').hidden = true;
-    }
-    const f = $('exTxFacts'); f.textContent = '';
-    fact(f, 'Hash', r.hash, r.hash);
-    fact(f, 'Status', r.inPool ? 'Waiting in the pool (not in a block yet)' : 'In block ' + Number(r.height).toLocaleString() + (r.confirmations != null ? ' · ' + r.confirmations.toLocaleString() + ' confirmation' + (r.confirmations === 1 ? '' : 's') : ''));
-    fact(f, 'Inputs / outputs', r.inputs + ' in, ' + r.outputs + ' out'); fact(f, 'Ring size', String(r.ringSize));
-    fact(f, 'Fee', fmtSfx(r.fee)); fact(f, 'Size', exKB(r.size));
-    if (r.tokenOutputs) fact(f, 'Token outputs', String(r.tokenOutputs));
-    const bb = $('exTxBlock'); bb.hidden = r.height == null; if (r.height != null) bb.onclick = () => exOpen(String(r.height));
-  }
-  async function exPoolRefresh() {
-    const r = await window.safex.exPool(); const box = $('exPool'); box.textContent = '';
-    if (!r.ok || !r.txs.length) { $('exPoolBox').hidden = true; return; }
-    $('exPoolBox').hidden = false; $('exPoolK').textContent = 'Waiting in the pool (' + r.txs.length + ') · not in a block yet';
-    for (const t of r.txs) { const a = document.createElement('button'); a.className = 'mini txbtn'; a.textContent = t.hash; a.title = exAge(t.time) + ' ago'; a.onclick = () => exOpen(t.hash); box.appendChild(a); }
-  }
-  function exBackToList() { $('exDetail').hidden = true; $('exList').hidden = false; $('exTxBox').hidden = true; $('exLatest').hidden = true; exErr(''); exRefresh(false); }
-  $('exGo').onclick = () => exOpen($('exQ').value);
-  $('exQ').onkeydown = (e) => { if (e.key === 'Enter') exOpen($('exQ').value); };
-  $('exBack').onclick = exBackToList; $('exLatest').onclick = () => { $('exQ').value = ''; exBackToList(); };
-  setInterval(() => exRefresh(false), 10000);
-
   // ---- tabs ---------------------------------------------------------------
   function showTab(name) {
-    for (const t of ['mine', 'node', 'rigs', 'pay', 'explorer']) {
+    for (const t of ['mine', 'node', 'rigs', 'pay', 'wallet']) {
       $(t + 'View').hidden = t !== name;
       $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
     if (name === 'rigs') renderRigs();
-    exVisible = name === 'explorer';
-    if (name === 'explorer') {
-      // With Safex Wallet installed, the Explorer tab opens it there; without it (or on another system) the built-in explorer stays.
-      window.safex.walletAppFind().then((f) => {
-        $('exLaunch').hidden = !f.found; $('exBuiltin').hidden = !!f.found; exVisible = !f.found;
-        if (f.found) walletOpen(); else exRefresh(true);
-      });
-    }
     $('wsRemove').hidden = name !== 'pay' || !(ws && ws.wallet);
     if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
@@ -335,13 +230,21 @@
   $('tabBtnNode').onclick = () => showTab('node');
   $('tabBtnRigs').onclick = () => showTab('rigs');
   $('tabBtnPay').onclick = () => showTab('pay');
-  async function walletOpen() {
-    $('exLaunchErr').hidden = true; const r = await window.safex.walletAppLaunch();
-    $('exLaunchMsg').textContent = r.ok ? 'Opening the explorer in Safex Wallet. If the wallet asks for your password, enter it once and the Explorer opens. It reads from your node.' : 'The explorer lives in Safex Wallet.';
-    if (!r.ok) { $('exLaunchErr').hidden = false; $('exLaunchErr').textContent = r.error; }
+  // The Wallet button jumps to Safex Wallet: an open wallet is simply brought forward, a closed one starts at its login.
+  // The miner stays where it is. Only when the wallet cannot be started does this tab show a short explanation.
+  let walletBusy = false;
+  async function walletJump() {
+    if (walletBusy) return; walletBusy = true; const btn = $('tabBtnWallet'); $('wlErr').hidden = true;
+    const f = await window.safex.walletAppFind();
+    const r = f.found ? await window.safex.walletAppLaunch() : { ok: false };
+    if (r.ok) { btn.textContent = 'Opening…'; setTimeout(() => { btn.textContent = 'Wallet'; walletBusy = false; }, 1800); return; }
+    walletBusy = false;
+    $('wlMsg').textContent = f.found ? 'Safex Wallet did not start.' : f.reason === 'platform' ? 'Safex Wallet only runs on Linux for now.' : 'Safex Wallet was not found. It is expected in your home folder, in a folder named safex-wallet.';
+    if (r.error) { $('wlErr').hidden = false; $('wlErr').textContent = r.error; }
+    showTab('wallet');
   }
-  $('exLaunchBtn').onclick = walletOpen;
-  $('tabBtnExplorer').onclick = () => showTab('explorer');
+  $('wlRetry').onclick = walletJump;
+  $('tabBtnWallet').onclick = walletJump;
 
   // ---- node panel ---------------------------------------------------------
   let panel = null;

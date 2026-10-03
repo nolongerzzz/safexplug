@@ -14,9 +14,9 @@ t('a folder with the wrong program name is not taken', () => { const x = mk('saf
 t('not installed (no electron) is not found', () => { const x = mk('safex-wallet', 'safex-wallet', false); assert.ok(!W.find({ home: x.home, env: {}, platform: 'linux' }).found); });
 t('a chosen folder wins over the home folder', () => { const a = mk('safex-wallet'), b = mk('elsewhere'); assert.strictEqual(W.find({ chosen: b.d, home: a.home, env: {}, platform: 'linux' }).dir, b.d); });
 t('other systems are told so', () => assert.strictEqual(W.find({ platform: 'darwin' }).reason, 'platform'));
-t('launch starts electron in that folder with --explorer, detached', () => {
+t('launch starts electron in that folder detached, no extra flags', () => {
   const x = mk('safex-wallet'); let got; const r = W.launch(x.d, (cmd, args, opts) => { got = { cmd, args, opts }; return { unref() {}, on() {} }; });
-  assert.ok(r.ok); assert.ok(got.cmd.endsWith('node_modules/.bin/electron')); assert.ok(got.args.includes('--explorer')); assert.strictEqual(got.opts.cwd, x.d); assert.strictEqual(got.opts.detached, true);
+  assert.ok(r.ok); assert.ok(got.cmd.endsWith('node_modules/.bin/electron')); assert.ok(!got.args.includes('--explorer')); assert.strictEqual(got.opts.cwd, x.d); assert.strictEqual(got.opts.detached, true);
 });
 t('launch failure is reported, not thrown', () => { const r = W.launch('/nope', () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); }); assert.ok(!r.ok); assert.ok(/ENOENT/.test(r.error)); });
 t('under sudo the person\'s own home is searched, not root\'s', () => {

@@ -10,7 +10,6 @@ const rigs = require('./core/rigs');
 const maint = require('./core/maintenance');
 const wallet = require('./core/wallet');
 const wsetup = require('./core/walletsetup');
-const explorer = require('./core/explorer');
 const walletapp = require('./core/walletapp');
 const { Collector, Reporter } = require('./core/reporter');
 const { HashLog } = require('./core/hashlog');
@@ -425,28 +424,8 @@ app.whenReady().then(() => {
     walletRpc.stop(); await new Promise((r) => setTimeout(r, 500)); wsetup.removeWallet(walletDir());
     settings.set({ walletRpc: '' }); payAt = 0; pollWallet(); return { ok: true };
   });
-  // light explorer: own node first, public node as fallback
-  async function exploreCall(fn) {
-    const st = settings.get();
-    const local = st.mode === 'solo' && st.node ? st.node : '127.0.0.1:17402';
-    const down = (x) => !x || (!x.ok && /^(offline|bad address|bad response)$/.test(x.error || ''));
-    const r = await fn(local);
-    if (r && r.ok) return { ...r, source: 'local' };
-    if (!down(r)) return r;
-    if (st.publicFallback !== false && local !== PUBLIC_NODE) {
-      const r2 = await fn(PUBLIC_NODE);
-      if (r2 && r2.ok) return { ...r2, source: 'public' };
-      if (!down(r2)) return r2;
-    }
-    return { ok: false, error: 'Could not reach a node. Start your node on the Node tab.' };
-  }
-  const mineHeights = () => (lastPay && lastPay.recent ? lastPay.recent.map((x) => x.height).filter(Boolean) : []);
-  ipcMain.handle('explorer:recent', async (_e, count, before) => { const r = await exploreCall((h) => explorer.recent(h, Number(count) || 20, before == null ? null : Number(before))); return { ...r, mine: mineHeights() }; });
-  ipcMain.handle('explorer:block', async (_e, q) => { const r = await exploreCall((h) => explorer.block(h, String(q || ''))); return { ...r, mine: mineHeights() }; });
-  ipcMain.handle('explorer:tx', (_e, hash) => exploreCall((h) => explorer.tx(h, String(hash || ''))));
   ipcMain.handle('walletapp:find', () => walletapp.find({ chosen: (settings.get() || {}).walletAppDir || '' }));
   ipcMain.handle('walletapp:launch', () => { const f = walletapp.find({ chosen: (settings.get() || {}).walletAppDir || '' }); return f.found ? walletapp.launch(f.dir) : { ok: false, error: 'Safex Wallet was not found on this computer.' }; });
-  ipcMain.handle('explorer:pool', () => exploreCall((h) => explorer.pool(h)));
   ipcMain.handle('wallet:get', () => lastPay || { state: 'off' });
   ipcMain.handle('rigs:forget', (_e, id) => { collector.forget(String(id || '')); pollRigs(); return true; });
   ipcMain.handle('rigs:report-status', () => ({ collect: settings.get().collect, last: reporter.last, target: reporter.target() }));
