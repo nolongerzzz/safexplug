@@ -30,7 +30,7 @@ function realUser(env = process.env, passwd = '/etc/passwd', isRoot = typeof pro
 // A folder the person chose wins, then SAFEX_WALLET_APP_DIR (tests), then the usual places in the home folder.
 function find({ chosen = '', home, env = process.env, platform = process.platform, user = realUser(env) } = {}) {
   home = home || (user && user.home) || os.homedir();
-  if (platform !== 'linux') return { found: false, reason: 'platform' };
+  if (platform !== 'linux' && platform !== 'darwin') return { found: false, reason: 'platform' };
   const tries = [chosen, env.SAFEX_WALLET_APP_DIR, ...NAMES.map((n) => path.join(home, n))].filter(Boolean);
   for (const d of tries) if (valid(d)) return { found: true, dir: d };
   return { found: false, reason: 'missing' };

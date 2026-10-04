@@ -239,7 +239,7 @@
     const r = f.found ? await window.safex.walletAppLaunch() : { ok: false };
     if (r.ok) { btn.textContent = 'Opening…'; setTimeout(() => { btn.textContent = 'Wallet'; walletBusy = false; }, 1800); return; }
     walletBusy = false;
-    $('wlMsg').textContent = f.found ? 'Safex Wallet did not start.' : f.reason === 'platform' ? 'Safex Wallet only runs on Linux for now.' : 'Safex Wallet was not found. It is expected in your home folder, in a folder named safex-wallet.';
+    $('wlMsg').textContent = f.found ? 'Safex Wallet did not start.' : f.reason === 'platform' ? 'Safex Wallet runs on Linux and Mac only for now.' : 'Safex Wallet was not found. It is expected in your home folder, in a folder named safex-wallet.';
     if (r.error) { $('wlErr').hidden = false; $('wlErr').textContent = r.error; }
     showTab('wallet');
   }
