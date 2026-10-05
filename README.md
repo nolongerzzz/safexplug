@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.13
+
+- **Update button.** Download `safex-miner-<version>-update.tar.xz` into your Downloads folder and an "Update to <version>" button appears in the header (click it twice: the second click confirms). The app unpacks the file over its own folder, keeps a backup of what it replaced (settings folder, `update-backup`), and restarts. It also works when the app was started by the full-speed launcher: it finds your Downloads folder and hands the new files back to you, not root. It refuses files that touch anything outside the app's own folders. Only works for the folder install (not a packaged .deb).
+
 ## What's new in 3.3.12
 
 - **Found blocks on the hashrate chart (solo mode only).** A diamond in the miner's color marks the moment each rig found a block. It also shows in the hover box, in the Table view and in the legend count. In pool mode nothing is recorded or shown. Blocks are remembered for 30 days (blocks-log.json).

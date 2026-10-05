@@ -36,6 +36,8 @@ let hashLog = null;
 const { build: buildRigChart } = require('./core/rigchart');
 const { BlockLog } = require('./core/blocklog');
 let blockLog = null;
+const updater = require('./core/updater');
+let updating = false;
 const rigLogs = new Map();      // per-rig hashrate history
 const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
 let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
@@ -417,6 +419,24 @@ app.whenReady().then(() => {
   hashLog = new HashLog(path.join(app.getPath('userData'), 'hashrate-log.json'));
   ipcMain.handle('stats:day', () => hashLog.summary());
   ipcMain.handle('stats:windows', () => windows(hashLog));
+  // Update button: finds safex-miner-<ver>-update.tar.xz in Downloads, unpacks it over this folder, restarts.
+  const appDir = path.join(__dirname, '..'), curVer = () => JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8')).version;
+  ipcMain.handle('update:check', () => {
+    if (app.isPackaged || updating) return null;
+    try { const f = updater.findUpdate({ prefix: 'safex-miner', current: curVer(), dirs: updater.downloadDirs(app.getPath('userData')) }); return f ? { version: f.version, current: curVer() } : null; } catch (_) { return null; }
+  });
+  ipcMain.handle('update:apply', async () => {
+    if (app.isPackaged) return { ok: false, error: 'This copy is installed from a package; rebuild the .deb instead.' };
+    if (updating) return { ok: false, error: 'Already updating.' };
+    updating = true;
+    try {
+      const f = updater.findUpdate({ prefix: 'safex-miner', current: curVer(), dirs: updater.downloadDirs(app.getPath('userData')) });
+      if (!f) { updating = false; return { ok: false, error: 'No newer update file found in Downloads.' }; }
+      const r = await updater.apply({ file: f.file, version: f.version, appDir, backupDir: path.join(app.getPath('userData'), 'update-backup'), currentVersion: curVer() });
+      setTimeout(() => { app.relaunch(); app.quit(); setTimeout(() => app.exit(0), 5000); }, 600);
+      return { ok: true, version: r.version };
+    } catch (e) { updating = false; return { ok: false, error: e.message }; }
+  });
   // Rigs-page chart: this machine + every rig currently listed (polled, reported, peers).
   ipcMain.handle('chart:rigs', (_e, range) => {
     const nm = settings.get().name;

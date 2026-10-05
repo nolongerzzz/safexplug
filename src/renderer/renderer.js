@@ -592,6 +592,20 @@
     const b = mk('text', { x: W - padL, y: H - 3, 'text-anchor': 'end', class: 'chart-label' }); b.textContent = endLabels[1];
   }
 
+  // ---- Update button: appears when a newer safex-miner-<ver>-update.tar.xz is in Downloads --------
+  { const b = $('updBtn'); let armTimer = null, info = null;
+    const label = () => { b.className = 'upd'; b.disabled = false; b.textContent = `Update to ${info.version}`; b.title = `Installs ${info.version} from your Downloads folder, then restarts the app (mining stops for a moment).`; };
+    async function check() { if (b.disabled) return; try { info = await window.safex.updateCheck(); } catch (_) { info = null; } if (!info) { b.hidden = true; return; } b.hidden = false; if (!armTimer && !b.classList.contains('err')) label(); }
+    b.onclick = async () => {
+      if (!info) return;
+      if (!armTimer) { b.className = 'upd arm'; b.textContent = 'Click again to install and restart'; armTimer = setTimeout(() => { armTimer = null; label(); }, 6000); return; }
+      clearTimeout(armTimer); armTimer = null; b.disabled = true; b.className = 'upd'; b.textContent = 'Updating…';
+      const r = await window.safex.updateApply();
+      if (r && r.ok) b.textContent = `Installed ${r.version}, restarting…`;
+      else { b.disabled = false; b.className = 'upd err'; b.textContent = 'Update failed'; b.title = (r && r.error) || 'Unknown error'; setTimeout(() => { b.className = 'upd'; check(); }, 12000); }
+    };
+    check(); setInterval(check, 60000); window.addEventListener('focus', check); }
+
   // ---- Rigs-page hashrate chart (one line per miner + total) ---------------
   const hc = { range: '24h', data: null, table: false, hover: -1 };
   const hcSlot = (() => { let m = {}; try { m = JSON.parse(localStorage.getItem('hcSlots') || '{}'); } catch (_) {}
