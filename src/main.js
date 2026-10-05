@@ -497,7 +497,11 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
-app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+app.on('second-instance', () => { if (!win || win.isDestroyed()) { createWindow(); return; } if (win.isMinimized()) win.restore(); win.focus(); });
 app.on('before-quit', () => { if (hashLog) hashLog.save(); if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
-// Closing the window quits the app on every system (Mac used to stay running in the Dock). The Docker node keeps running on its own.
-app.on('window-all-closed', () => { app.quit(); });
+// Closing the window: if mining or the node is running, the app keeps going in the background (so mining and the node
+// are not cut off); reopen it from the Dock or by launching it again. If neither is running, it quits fully.
+const keepAlive = () => miner.running || dockerStatus.container === 'running' || dockerStatus.container === 'restarting' || !!nodeBusy;
+app.on('window-all-closed', () => { if (!keepAlive()) app.quit(); });
+// Windowless and everything has stopped (mining stopped, node stopped): nothing left to keep alive, so quit.
+setInterval(() => { if (app.isReady() && BrowserWindow.getAllWindows().length === 0 && !keepAlive()) app.quit(); }, 5000);
