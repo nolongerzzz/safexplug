@@ -499,4 +499,5 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 app.on('before-quit', () => { if (hashLog) hashLog.save(); if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+// Closing the window quits the app on every system (Mac used to stay running in the Dock). The Docker node keeps running on its own.
+app.on('window-all-closed', () => { app.quit(); });
