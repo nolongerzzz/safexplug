@@ -2,6 +2,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, clipboard, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const { Miner } = require('./core/miner');
 const { Settings } = require('./core/settings');
 const { getInfo } = require('./core/node-status');
@@ -89,6 +90,7 @@ function shareAddrs() {
 async function pollDocker() {
   if (nodeBusy) { sendPanel(); return; }
   dockerStatus = await docker.status();
+  dockerStatus.appPresent = process.platform !== 'darwin' || ['/Applications/Docker.app', path.join(os.homedir(), 'Applications', 'Docker.app')].some((x) => fs.existsSync(x));
   dockerStatus.exposure = dockerStatus.container === 'none' ? null : await docker.rpcExposure();
   dockerStatus.restricted = dockerStatus.exposure === 'lan' ? await docker.rpcRestricted() : null;
   manageLogs();
@@ -115,6 +117,11 @@ async function nodeAction(action) {
         break;
       }
       case 'start-engine': {
+        if (process.platform === 'darwin' && dockerStatus.appPresent === false) {
+          note('The Docker app is not installed on this Mac (only leftover command-line files). Opening the Docker download page.');
+          shell.openExternal('https://www.docker.com/products/docker-desktop/');
+          break;
+        }
         if (process.platform === 'darwin') {
           note('Opening Docker. Wait for the whale icon in the menu bar to stop moving; this can take a minute or two.');
           const code = await runStreamed('Opening Docker…', docker.startDockerApp());

@@ -342,6 +342,8 @@
         btn: linux ? 'Install Docker' : 'Get Docker',
         hint: linux ? 'One click. You will be asked for your password once.' : 'Opens the Docker download page. Install it, then come back.' };
     }
+    if (d.engine === 'down' && d.appPresent === false) return { state: 'Docker app is not installed', action: 'install-docker', btn: 'Get Docker',
+      hint: 'Opens the Docker download page. Install it, open it once, then come back. Or use another computer\'s node instead.' };
     if (d.engine === 'down') {
       const linux = p.plan.kind === 'linux-apt';
       return { state: 'Docker is not running', action: 'start-engine', btn: linux ? 'Start Docker' : 'Open Docker',
