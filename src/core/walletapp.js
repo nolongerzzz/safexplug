@@ -6,12 +6,20 @@ const { spawn } = require('child_process');
 
 const NAMES = ['safex-wallet', 'Safex-Wallet', 'safex-homebase', 'Safex-HomeBase'];
 
+// The real Electron program inside the wallet's folder. Starting it directly (instead of the node_modules/.bin/electron
+// script) matters: that script needs "node" on the PATH, and a program opened from a Dock icon or launcher has no PATH,
+// so the wallet button silently did nothing there.
+function electronBin(dir, platform = process.platform) {
+  const direct = platform === 'darwin' ? path.join(dir, 'node_modules', 'electron', 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron')
+    : path.join(dir, 'node_modules', 'electron', 'dist', 'electron');
+  for (const f of [direct, path.join(dir, 'node_modules', '.bin', 'electron')]) { try { fs.accessSync(f, fs.constants.X_OK); return f; } catch (_) {} }
+  return null;
+}
 function valid(dir) {
   try {
     const pj = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
     if (!/safex-(wallet|homebase)/i.test(String(pj.name || ''))) return false;
-    fs.accessSync(path.join(dir, 'node_modules', '.bin', 'electron'), fs.constants.X_OK);
-    return true;
+    return !!electronBin(dir);
   } catch (_) { return false; }
 }
 
@@ -38,15 +46,16 @@ function find({ chosen = '', home, env = process.env, platform = process.platfor
 
 // Starts the wallet in its folder, the same way "npm start" does, detached so closing the miner does not close it.
 // If the wallet is already running, the second start just brings that window forward; if not, it opens at its login.
-function launch(dir, spawnFn = spawn, user = realUser()) {
+function launch(dir, spawnFn = spawn, user = realUser(), platform = process.platform) {
   try {
+    const bin = electronBin(dir, platform); if (!bin) return { ok: false, error: 'Could not start the wallet: its Electron program is missing. Run npm install in the wallet folder.' };
     const opts = { cwd: dir, detached: true, stdio: 'ignore' };
     if (user) { opts.uid = user.uid; opts.gid = user.gid; opts.env = { ...process.env, HOME: user.home, USER: user.name, LOGNAME: user.name }; delete opts.env.SUDO_USER; delete opts.env.SUDO_UID; delete opts.env.SUDO_GID; }
-    const child = spawnFn(path.join(dir, 'node_modules', '.bin', 'electron'), ['.', '--no-sandbox'], opts);
+    const child = spawnFn(bin, ['.', '--no-sandbox'], opts);
     child.on && child.on('error', () => {});
     child.unref && child.unref();
     return { ok: true };
   } catch (e) { return { ok: false, error: 'Could not start the wallet: ' + (e.code || e.message) }; }
 }
 
-module.exports = { find, launch, valid, realUser, NAMES };
+module.exports = { find, launch, valid, realUser, electronBin, NAMES };

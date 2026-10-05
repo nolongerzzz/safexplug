@@ -19,7 +19,7 @@ t('launch starts electron in that folder detached, no extra flags', () => {
   const x = mk('safex-wallet'); let got; const r = W.launch(x.d, (cmd, args, opts) => { got = { cmd, args, opts }; return { unref() {}, on() {} }; });
   assert.ok(r.ok); assert.ok(got.cmd.endsWith('node_modules/.bin/electron')); assert.ok(!got.args.includes('--explorer')); assert.strictEqual(got.opts.cwd, x.d); assert.strictEqual(got.opts.detached, true);
 });
-t('launch failure is reported, not thrown', () => { const r = W.launch('/nope', () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); }); assert.ok(!r.ok); assert.ok(/ENOENT/.test(r.error)); });
+t('launch failure is reported, not thrown', () => { const r = W.launch(mk('safex-wallet').d, () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); }); assert.ok(!r.ok); assert.ok(/ENOENT/.test(r.error)); });
 t('under sudo the person\'s own home is searched, not root\'s', () => {
   const x = mk('safex-wallet'); const pw = path.join(x.home, 'passwd'); fs.writeFileSync(pw, `root:x:0:0:root:/root:/bin/bash\nzach:x:1000:1000:Z:${x.home}:/bin/bash\n`);
   const u = W.realUser({ SUDO_USER: 'zach', SUDO_UID: '1000', SUDO_GID: '1000' }, pw, true);
@@ -31,4 +31,13 @@ t('launched from root, the wallet starts as the person, with their home, not as 
   const x = mk('safex-wallet'); let got; W.launch(x.d, (c, a, o) => { got = o; return { unref() {}, on() {} }; }, { name: 'zach', uid: 1000, gid: 1000, home: '/home/zach' });
   assert.strictEqual(got.uid, 1000); assert.strictEqual(got.gid, 1000); assert.strictEqual(got.env.HOME, '/home/zach'); assert.ok(!('SUDO_USER' in got.env));
 });
+t('launch starts the real Electron program directly (no node on the PATH needed), on a Mac and on Linux', () => {
+  const x = mk('safex-wallet'); const mac = path.join(x.d, 'node_modules', 'electron', 'dist', 'Electron.app', 'Contents', 'MacOS'); fs.mkdirSync(mac, { recursive: true });
+  fs.writeFileSync(path.join(mac, 'Electron'), '#!/bin/sh\n', { mode: 0o755 });
+  let got; W.launch(x.d, (c, a) => { got = { c, a }; return { unref() {}, on() {} }; }, null, 'darwin');
+  assert.ok(got.c.endsWith('Electron.app/Contents/MacOS/Electron')); assert.deepStrictEqual(got.a, ['.', '--no-sandbox']);
+  const y = mk('safex-wallet'); const lin = path.join(y.d, 'node_modules', 'electron', 'dist'); fs.mkdirSync(lin, { recursive: true }); fs.writeFileSync(path.join(lin, 'electron'), '#!/bin/sh\n', { mode: 0o755 });
+  W.launch(y.d, (c) => { got = { c }; return { unref() {}, on() {} }; }, null, 'linux'); assert.ok(got.c.endsWith('dist/electron'));
+});
+t('with no Electron at all, launch says so instead of failing silently', () => { const x = mk('safex-wallet', 'safex-wallet', false); const r = W.launch(x.d, () => { throw new Error('should not spawn'); }, null, 'darwin'); assert.ok(!r.ok && /Electron program is missing/.test(r.error)); });
 console.log(n + ' tests passed');
