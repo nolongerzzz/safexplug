@@ -30,6 +30,7 @@ app.whenReady().then(async () => {
   // 4. fresh: engine ok, nothing built
   set('engine', 'ok'); await wait(6000); await show('fresh machine:');
   await snap('n1-fresh.png');
+  console.log('own-node box has the same button:', await js(`(()=>{const o=document.getElementById('ownBtn'),n=document.getElementById('nodeBtn');return !o.hidden&&o.textContent===n.textContent&&o.textContent.length>0})()`));
   console.log('choice card shown:', await js(`!document.getElementById('nodeChoice').hidden`), '| main dimmed:', await js(`document.getElementById('nodeMain').classList.contains('idle')`));
   await js(`document.getElementById('useOther').click()`); await wait(500);
   console.log('use-another -> mine tab, solo mode, address focused:', await js(`!document.getElementById('mineView').hidden && !document.getElementById('soloRow').hidden && document.activeElement.id==='node'`));

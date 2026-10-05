@@ -386,6 +386,8 @@
     $('nodeMain').classList.toggle('nonode', none);
     $('maintCard').classList.toggle('idle', none);
     $('nodeChoice').hidden = !noNode;
+    // The same next-step button, repeated inside the "Run my own node here" box.
+    const ob = $('ownBtn'); ob.hidden = !step.btn; ob.textContent = step.btn || ''; ob.dataset.action = step.action || ''; ob.disabled = !step.btn;
     if (running && node && node.height) {
       $('nHeight').textContent = node.height.toLocaleString();
       $('nTarget').textContent = (node.target || node.height).toLocaleString();
@@ -403,6 +405,7 @@
     showTab('mine');
     setTimeout(() => { try { $('node').focus(); $('node').select(); } catch (_) {} }, 50);
   };
+  $('ownBtn').onclick = () => $('nodeBtn').click();
   $('nodeBtn').onclick = async () => {
     const a = $('nodeBtn').dataset.action;
     if (!a) return;
