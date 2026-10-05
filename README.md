@@ -2,6 +2,11 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.11
+
+- **Hashrate chart on the Rigs page.** One line per miner (this machine and every rig, including ones that report to your main computer) plus a dashed Total, so you can see rises and dips. Ranges: 1 h, 6 h, 24 h, 7 d. Hover (or use the arrow keys) for exact values; the Table button shows the same numbers as a list. A miner that stops shows as a dip to zero.
+- The header logo inside the app (all screens) is now the SAFEX HOMEBASE Node+Mine logo instead of the old Community one.
+
 ## What's new in 3.3.1
 
 - New SAFEX HOMEBASE (Node+Mine edition) app icon. After rebuilding the package it also shows on the full-speed menu entry.

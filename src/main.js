@@ -33,6 +33,7 @@ let rigRows = [];
 let rigsBusy = false;
 let collector = null, reporter = null, miningSince2 = 0;
 let hashLog = null;
+const { build: buildRigChart } = require('./core/rigchart');
 const rigLogs = new Map();      // per-rig hashrate history
 const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
 let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
@@ -412,6 +413,14 @@ app.whenReady().then(() => {
   hashLog = new HashLog(path.join(app.getPath('userData'), 'hashrate-log.json'));
   ipcMain.handle('stats:day', () => hashLog.summary());
   ipcMain.handle('stats:windows', () => windows(hashLog));
+  // Rigs-page chart: this machine + every rig currently listed (polled, reported, peers).
+  ipcMain.handle('chart:rigs', (_e, range) => {
+    const nm = settings.get().name;
+    const entries = [{ id: 'self', name: nm ? `${nm} · this machine` : 'This machine', log: hashLog }];
+    const seen = new Set();
+    for (const r of rigRows || []) { const k = rigKey(r); if (seen.has(k)) continue; seen.add(k); entries.push({ id: k, name: r.name || k, log: rigLog(k) }); }
+    return buildRigChart(range, entries);
+  });
   // 24 h charts: combined hashrate (this machine + every rig, 10 min buckets) and payments (hourly).
   ipcMain.handle('chart:day', () => {
     const logs = [hashLog, ...settings.get().rigs.map((r) => rigLog(rigKey(r)))];

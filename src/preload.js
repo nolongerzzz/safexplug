@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('safex', {
   walletGet: () => ipcRenderer.invoke('wallet:get'),
   statsWindows: () => ipcRenderer.invoke('stats:windows'),
   chartDay: () => ipcRenderer.invoke('chart:day'),
+  chartRigs: (range) => ipcRenderer.invoke('chart:rigs', range),
   statsDay: () => ipcRenderer.invoke('stats:day'),
   wsStatus: () => ipcRenderer.invoke('wsetup:status'),
   wsDownload: () => ipcRenderer.invoke('wsetup:download'),

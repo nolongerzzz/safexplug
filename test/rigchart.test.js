@@ -1,0 +1,18 @@
+'use strict';
+const assert = require('assert');
+const { build, MAX_SERIES } = require('../src/core/rigchart');
+const fake = (pts) => ({ series: (w, s) => { const n = Math.ceil(w / s); const a = new Array(n).fill(null); for (const [i, v] of Object.entries(pts)) a[+i < 0 ? n + +i : +i] = v; return a; } });
+let r = build('1h', [{ id: 'a', name: 'A', log: fake({ 10: 100, 11: 100, 14: 100 }) }, { id: 'b', name: 'B', log: fake({}) }], 1e6);
+assert.strictEqual(r.series.length, 1, 'rig with no data is dropped');
+assert.strictEqual(r.series[0].points[5], null, 'no line before first sample');
+assert.strictEqual(r.series[0].points[12], 0, 'gap after first sample is a dip');
+assert.strictEqual(r.step, 60); assert.strictEqual(r.total.length, 60);
+r = build('24h', [{ id: 'a', name: 'A', log: fake({ 0: 50, 1: 50 }) }, { id: 'b', name: 'B', log: fake({ 1: 25 }) }], 1e6);
+assert.deepStrictEqual(r.total.slice(0, 3), [50, 75, 0]);
+assert.strictEqual(r.series[1].points[0], null);
+const many = Array.from({ length: 11 }, (_, i) => ({ id: 'r' + i, name: 'R' + i, log: fake({ 0: 10 + i }) }));
+r = build('7d', many, 1e6);
+assert.strictEqual(r.series.length, MAX_SERIES); assert.strictEqual(r.series[MAX_SERIES - 1].id, 'other');
+assert.strictEqual(r.total[0], many.reduce((a, _, i) => a + 10 + i, 0));
+assert.strictEqual(build('bogus', [], 1e6).step, 600);
+console.log('rigchart tests passed');

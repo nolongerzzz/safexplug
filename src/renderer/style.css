@@ -3,7 +3,7 @@
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif}
 .app{max-width:860px;margin:0 auto;padding:14px 16px 10px;display:flex;flex-direction:column;gap:12px;height:100vh}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.logo{height:34px}
+.logo{height:46px;display:block}
 .cpu{color:var(--mute);font-size:12px;text-align:right}
 .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0;display:flex;align-items:center;gap:10px}
@@ -171,3 +171,16 @@ details.adv{gap:0}
 #nodeMain.idle .nodehead .go{opacity:1}
 .choice .choices{display:flex;gap:12px;flex-wrap:wrap}
 .choice .opt{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px}
+
+/* Rigs-page hashrate chart. Series colors validated against the panel surface (dark). */
+:root{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--sother:#6f8396}
+.hc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}.hc-head .k{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.hc-legend{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:4px;font-size:12px}
+.hc-legend span{display:inline-flex;align-items:center;gap:6px;color:var(--text)}.hc-legend i{width:10px;height:3px;border-radius:2px;display:inline-block}.hc-legend b{font-weight:600}.hc-legend em{font-style:normal;color:var(--mute)}
+.hc-plot{position:relative}.hc-plot svg{width:100%;height:190px;display:block;outline:none}
+.hc-grid{stroke:var(--line);stroke-width:1;opacity:.55}.hc-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.hc-ax{fill:var(--mute);font-size:10px}.hc-empty{fill:var(--mute);font-size:12px}.hc-cross{stroke:var(--mute);stroke-width:1}
+.hc-tip{position:absolute;top:4px;pointer-events:none;background:#0d1b2a;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;min-width:150px;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:3}
+.hc-tip .t{color:var(--mute);margin-bottom:3px}.hc-tip div.r{display:flex;align-items:center;gap:6px;white-space:nowrap}.hc-tip i{width:10px;height:3px;border-radius:2px;flex:none}.hc-tip .n{color:var(--mute);flex:1;overflow:hidden;text-overflow:ellipsis}.hc-tip .tv{font-size:12px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.hc-tablewrap{max-height:220px;overflow:auto}.hc-tablewrap table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}.hc-tablewrap th,.hc-tablewrap td{padding:3px 8px;text-align:right;border-bottom:1px solid var(--line)}.hc-tablewrap th:first-child,.hc-tablewrap td:first-child{text-align:left}.hc-tablewrap th{position:sticky;top:0;background:var(--panel);color:var(--mute);font-weight:500}
+#hcRange button{padding:4px 12px;font-size:12px}#hcRange{padding:2px}

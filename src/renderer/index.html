@@ -179,6 +179,17 @@
       <div class="tile"><div class="k" id="cSharesK">Accepted / Rejected</div><div class="v" id="cShares">0 / 0</div></div>
       <div class="tile" title="Average time for all your rigs together to find a block solo."><div class="k">Expected block (all)</div><div class="v" id="cExp">—</div><div class="sub" id="cExpSub"></div></div>
     </section>
+    <section class="panel hc" id="hcPanel">
+      <div class="hc-head">
+        <div class="k">Hashrate over time</div>
+        <div class="spacer"></div>
+        <div class="mode" id="hcRange" role="group" aria-label="Time range"><button data-r="1h">1 h</button><button data-r="6h">6 h</button><button data-r="24h" class="sel">24 h</button><button data-r="7d">7 d</button></div>
+        <button id="hcTable" class="mini" aria-pressed="false">Table</button>
+      </div>
+      <div class="hc-legend" id="hcLegend"></div>
+      <div class="hc-plot" id="hcPlot"><svg id="hcSvg" role="img" aria-label="Hashrate over time, one line per miner" tabindex="0"></svg><div class="hc-tip" id="hcTip" hidden></div></div>
+      <div class="hc-tablewrap" id="hcTableWrap" hidden></div>
+    </section>
     <section class="panel">
       <table class="rigtable" id="rigTable">
         <thead><tr><th>Miner</th><th>Status</th><th>Now</th><th>1 h</th><th>6 h</th><th>24 h</th><th id="thShares">Shares</th><th>Uptime</th><th></th></tr></thead>

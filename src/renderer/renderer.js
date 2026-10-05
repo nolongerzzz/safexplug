@@ -222,7 +222,7 @@
       $('tabBtn' + t[0].toUpperCase() + t.slice(1)).className = t === name ? 'sel' : '';
     }
     if (name === 'node') { window.safex.nodeRefresh().then(applyRefresh); loadMaint(); }
-    if (name === 'rigs') renderRigs();
+    if (name === 'rigs') { renderRigs(); hcLoad(); }
     $('wsRemove').hidden = name !== 'pay' || !(ws && ws.wallet);
     if (name === 'pay') { setPayBubble(false); if (payCount !== null) { settings.walletSeen = payCount; window.safex.setSettings({ walletSeen: payCount }); } drawCharts(); $('pAddr').value = settings.walletRpc || ''; window.safex.walletGet().then(renderPay); loadWs(); loadDay(); }
   }
@@ -591,6 +591,63 @@
     const a = mk('text', { x: padL, y: H - 3, class: 'chart-label' }); a.textContent = endLabels[0];
     const b = mk('text', { x: W - padL, y: H - 3, 'text-anchor': 'end', class: 'chart-label' }); b.textContent = endLabels[1];
   }
+
+  // ---- Rigs-page hashrate chart (one line per miner + total) ---------------
+  const hc = { range: '24h', data: null, table: false, hover: -1 };
+  const hcSlot = (() => { let m = {}; try { m = JSON.parse(localStorage.getItem('hcSlots') || '{}'); } catch (_) {}
+    return (id) => { if (id === 'other') return 'var(--sother)'; if (!(id in m)) { const used = new Set(Object.values(m)); let k = 1; while (used.has(k) && k < 8) k++; m[id] = k; try { localStorage.setItem('hcSlots', JSON.stringify(m)); } catch (_) {} } return `var(--s${m[id]})`; }; })();
+  const hcAxis = (v) => (v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + ' MH/s' : v >= 1e3 ? (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + ' kH/s' : Math.round(v) + ' H/s');
+  const hcTime = (t, long) => { const d = new Date(t * 1000); return hc.range === '7d' ? d.toLocaleDateString([], { weekday: 'short' }) + (long ? ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '') : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+  const hcNice = (max) => { const p = Math.pow(10, Math.floor(Math.log10(max))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= max) return m * p; return 10 * p; };
+  function hcDraw() {
+    const d = hc.data, svg = $('hcSvg'), legend = $('hcLegend'), tip = $('hcTip');
+    svg.textContent = ''; legend.textContent = ''; tip.hidden = true;
+    const mk = (n, a, parent) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); (parent || svg).appendChild(e); return e; };
+    const W = Math.max(280, svg.clientWidth || 640), H = 190, L = 54, R = 10, T = 8, B = 20;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const max = d ? Math.max(0, ...d.total.map((v) => v || 0)) : 0;
+    if (!d || !d.series.length || !max) { mk('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'hc-empty' }).textContent = 'Nothing recorded yet. Lines appear once a miner has been hashing for a minute or two.'; $('hcTableWrap').textContent = ''; return; }
+    const n = d.total.length, top = hcNice(max * 1.05), x = (i) => L + (i / (n - 1)) * (W - L - R), y = (v) => T + (1 - v / top) * (H - T - B);
+    for (let k = 0; k <= 4; k++) { const v = top * k / 4, yy = y(v); mk('line', { x1: L, x2: W - R, y1: yy, y2: yy, class: 'hc-grid' }); mk('text', { x: L - 6, y: yy + 3, 'text-anchor': 'end', class: 'hc-ax' }).textContent = k ? hcAxis(v) : '0'; }
+    for (let k = 0; k <= 4; k++) { const i = Math.round(k * (n - 1) / 4); mk('text', { x: x(i), y: H - 5, 'text-anchor': k === 0 ? 'start' : k === 4 ? 'end' : 'middle', class: 'hc-ax' }).textContent = hcTime(d.from + i * d.step); }
+    const path = (pts) => { let s = '', pen = false; pts.forEach((v, i) => { if (v == null) { pen = false; return; } s += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; }); return s; };
+    const multi = d.series.length > 1;
+    if (multi) { mk('path', { d: path(d.total.map((v) => v || 0)) + `L${x(n - 1)} ${y(0)}L${x(0)} ${y(0)}Z`, fill: 'var(--text)', opacity: 0.09 }); mk('path', { d: path(d.total), class: 'hc-line', stroke: 'var(--text)', 'stroke-dasharray': '5 4', opacity: 0.7 }); }
+    for (const s of d.series) {
+      const col = hcSlot(s.id); mk('path', { d: path(s.points), class: 'hc-line', stroke: col });
+      let li = -1; s.points.forEach((v, i) => { if (v != null) li = i; });
+      if (li >= 0) { mk('circle', { cx: x(li), cy: y(s.points[li]), r: 4.5, fill: col, stroke: '#14263a', 'stroke-width': 2 }); }
+      const last = li >= 0 ? s.points[li] : null, item = document.createElement('span'), sw = document.createElement('i'); sw.style.background = col;
+      const nm = document.createElement('b'); nm.textContent = s.name; const val = document.createElement('em'); val.textContent = fmtHs(last);
+      item.append(sw, nm, val); legend.appendChild(item);
+    }
+    if (multi) { const item = document.createElement('span'), sw = document.createElement('i'); sw.style.cssText = 'background:var(--text);opacity:.7'; const nm = document.createElement('b'); nm.textContent = 'Total'; const val = document.createElement('em'); val.textContent = fmtHs(d.total[n - 1]); item.append(sw, nm, val); legend.appendChild(item); }
+    const cross = mk('line', { y1: T, y2: H - B, class: 'hc-cross', visibility: 'hidden' }), dots = d.series.map((s) => mk('circle', { r: 4.5, stroke: '#14263a', 'stroke-width': 2, fill: hcSlot(s.id), visibility: 'hidden' }));
+    const show = (i) => {
+      i = Math.max(0, Math.min(n - 1, i)); hc.hover = i; const xx = x(i);
+      cross.setAttribute('x1', xx); cross.setAttribute('x2', xx); cross.setAttribute('visibility', 'visible');
+      tip.textContent = ''; const t = document.createElement('div'); t.className = 't'; t.textContent = hcTime(d.from + i * d.step, true); tip.appendChild(t);
+      const row = (col, name, v, dim) => { const r = document.createElement('div'); r.className = 'r'; const sw = document.createElement('i'); sw.style.background = col; if (dim) sw.style.opacity = 0.7; const nm = document.createElement('span'); nm.className = 'n'; nm.textContent = name; const vv = document.createElement('span'); vv.className = 'tv'; vv.textContent = v == null ? '—' : fmtHs(v); r.append(sw, nm, vv); tip.appendChild(r); };
+      d.series.forEach((s, k) => { const v = s.points[i]; row(hcSlot(s.id), s.name, v); if (v == null) dots[k].setAttribute('visibility', 'hidden'); else { dots[k].setAttribute('cx', xx); dots[k].setAttribute('cy', y(v)); dots[k].setAttribute('visibility', 'visible'); } });
+      if (multi) row('var(--text)', 'Total', d.total[i], true);
+      tip.hidden = false; const pw = $('hcPlot').clientWidth, tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(pw - tw, xx + 12 > pw - tw ? xx - tw - 12 : xx + 12)) + 'px';
+    };
+    const hide = () => { hc.hover = -1; tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')); };
+    svg.onmousemove = (e) => { const r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left) / r.width * W - L) / (W - L - R) * (n - 1))); };
+    svg.onmouseleave = hide; svg.onblur = hide;
+    svg.onkeydown = (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); show((hc.hover < 0 ? n - 1 : hc.hover) + (e.key === 'ArrowLeft' ? -1 : 1)); } else if (e.key === 'Escape') hide(); };
+    // table view: newest first, one row per bucket that has data
+    const tw = $('hcTableWrap'); tw.textContent = ''; const tb = document.createElement('table'), hr = tb.createTHead().insertRow();
+    for (const h of ['Time', ...d.series.map((s) => s.name), ...(multi ? ['Total'] : [])]) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); }
+    const body = tb.createTBody();
+    for (let i = n - 1; i >= 0; i--) { if (d.total[i] == null) continue; const tr = body.insertRow(); tr.insertCell().textContent = hcTime(d.from + i * d.step, true); for (const s of d.series) tr.insertCell().textContent = s.points[i] == null ? '—' : fmtHs(s.points[i]); if (multi) tr.insertCell().textContent = fmtHs(d.total[i]); }
+    tw.appendChild(tb);
+  }
+  function hcLoad() { const r = hc.range; return window.safex.chartRigs(r).then((c) => { if (r === hc.range) { hc.data = c; hcDraw(); } }).catch(() => {}); }
+  for (const b of document.querySelectorAll('#hcRange button')) b.onclick = () => { hc.range = b.dataset.r; for (const o of document.querySelectorAll('#hcRange button')) o.classList.toggle('sel', o === b); hcLoad(); };
+  $('hcTable').onclick = () => { hc.table = !hc.table; $('hcTable').setAttribute('aria-pressed', String(hc.table)); $('hcTable').classList.toggle('sel', hc.table); $('hcTableWrap').hidden = !hc.table; $('hcPlot').hidden = hc.table; };
+  window.addEventListener('resize', () => { if (!$('rigsView').hidden && hc.data) hcDraw(); });
+  setInterval(() => { if (!$('rigsView').hidden) hcLoad(); }, 30000);
   function drawCharts() {
     window.safex.chartDay().then((c) => {
       drawArea($('chHash'), c.hash, fmtHs, ['24 h ago', 'now']);
