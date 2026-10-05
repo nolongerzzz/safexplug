@@ -5,7 +5,7 @@
 const RANGES = { '1h': [3600, 60], '6h': [21600, 300], '24h': [86400, 600], '7d': [604800, 3600] };
 const MAX_SERIES = 8;
 
-function build(range, entries, now = Math.floor(Date.now() / 1000)) {
+function build(range, entries, now = Math.floor(Date.now() / 1000), events = []) {
   const [win, step] = RANGES[range] || RANGES['24h'];
   const n = Math.ceil(win / step), from = now - win;
   let series = entries.map((e) => {
@@ -20,7 +20,9 @@ function build(range, entries, now = Math.floor(Date.now() / 1000)) {
     series = keep;
   }
   const total = series.length ? sum(series, n) : new Array(n).fill(null);
-  return { range, from, to: now, step, series: series.map(({ id, name, points }) => ({ id, name, points })), total };
+  const ids = new Set(series.map((x) => x.id));
+  const blocks = events.filter((e) => e.t >= from && e.t <= now).map((e) => ({ t: e.t, id: ids.has(e.id) ? e.id : 'other', name: e.name, i: Math.min(n - 1, Math.floor((e.t - from) / step)) }));
+  return { range, from, to: now, step, blocks, series: series.map(({ id, name, points }) => ({ id, name, points })), total };
 }
 const peak = (p) => p.reduce((m, v) => (v > m ? v : m), 0);
 function sum(list, n) {

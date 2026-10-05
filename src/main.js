@@ -34,6 +34,8 @@ let rigsBusy = false;
 let collector = null, reporter = null, miningSince2 = 0;
 let hashLog = null;
 const { build: buildRigChart } = require('./core/rigchart');
+const { BlockLog } = require('./core/blocklog');
+let blockLog = null;
 const rigLogs = new Map();      // per-rig hashrate history
 const zeroSince = new Map();    // rig key -> when it first answered with no hashrate
 let walletRpc = null;     // the wallet tool process we manage (view-only wallet)
@@ -280,6 +282,7 @@ async function pollRigs() {
     const now = Date.now();
     rigRows = rows.map((r) => {
       const key = rigKey(r); const log = rigLog(key); let hung = false;
+      if (blockLog && r.online) blockLog.note(key, r.name, r.accepted || 0, s.mode === 'solo');
       if (r.online && r.hashrate > 0) { log.add(r.hashrate); zeroSince.delete(key); }
       else if (r.online && r.reported && !r.mining) zeroSince.delete(key);
       else if (r.online) { if (!zeroSince.has(key)) zeroSince.set(key, now); hung = now - zeroSince.get(key) > HUNG_AFTER_MS; }
@@ -384,7 +387,7 @@ app.whenReady().then(() => {
   applyReporting();
 
   miner.on('log', (l) => send('miner:log', l));
-  miner.on('stats', (st) => send('miner:stats', st));
+  miner.on('stats', (st) => { if (blockLog) { const nm = settings.get().name; blockLog.note('self', nm ? `${nm} · this machine` : 'This machine', st.blocks || 0, settings.get().mode === 'solo'); } send('miner:stats', st); });
   miner.on('state', (st) => { if (st && st.running) miningSince2 = Date.now(); send('miner:state', st); });
   miner.on('exit', (e) => { send('miner:state', { running: false, exit: e }); });
 
@@ -410,6 +413,7 @@ app.whenReady().then(() => {
     if ('walletRpc' in patch || 'miningSince' in patch) { payAt = 0; pollWallet(); }
     return s;
   });
+  blockLog = new BlockLog(path.join(app.getPath('userData'), 'blocks-log.json'));
   hashLog = new HashLog(path.join(app.getPath('userData'), 'hashrate-log.json'));
   ipcMain.handle('stats:day', () => hashLog.summary());
   ipcMain.handle('stats:windows', () => windows(hashLog));
@@ -419,7 +423,8 @@ app.whenReady().then(() => {
     const entries = [{ id: 'self', name: nm ? `${nm} · this machine` : 'This machine', log: hashLog }];
     const seen = new Set();
     for (const r of rigRows || []) { const k = rigKey(r); if (seen.has(k)) continue; seen.add(k); entries.push({ id: k, name: r.name || k, log: rigLog(k) }); }
-    return buildRigChart(range, entries);
+    const solo = settings.get().mode === 'solo';
+    return buildRigChart(range, entries, undefined, solo && blockLog ? blockLog.events : []);
   });
   // 24 h charts: combined hashrate (this machine + every rig, 10 min buckets) and payments (hourly).
   ipcMain.handle('chart:day', () => {

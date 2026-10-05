@@ -622,6 +622,13 @@
       item.append(sw, nm, val); legend.appendChild(item);
     }
     if (multi) { const item = document.createElement('span'), sw = document.createElement('i'); sw.style.cssText = 'background:var(--text);opacity:.7'; const nm = document.createElement('b'); nm.textContent = 'Total'; const val = document.createElement('em'); val.textContent = fmtHs(d.total[n - 1]); item.append(sw, nm, val); legend.appendChild(item); }
+    const blocks = d.blocks || [];
+    for (const b of blocks) {
+      const sr = d.series.find((q) => q.id === b.id), v = sr && sr.points[b.i] != null ? sr.points[b.i] : (d.total[b.i] || 0), cx = x(b.i), cy = y(v), r = 7;
+      const dm = mk('path', { d: `M${cx} ${cy - r}L${cx + r} ${cy}L${cx} ${cy + r}L${cx - r} ${cy}Z`, fill: sr ? hcSlot(sr.id) : 'var(--sother)', stroke: '#14263a', 'stroke-width': 2 });
+      mk('title', {}, dm).textContent = `Block found · ${b.name} · ${hcTime(b.t, true)}`;
+    }
+    if (blocks.length) { const item = document.createElement('span'), sw = document.createElement('i'); sw.style.cssText = 'width:9px;height:9px;background:var(--text);transform:rotate(45deg);border-radius:1px'; const nm = document.createElement('b'); nm.textContent = 'Block found'; const val = document.createElement('em'); val.textContent = String(blocks.length); item.append(sw, nm, val); legend.appendChild(item); }
     const cross = mk('line', { y1: T, y2: H - B, class: 'hc-cross', visibility: 'hidden' }), dots = d.series.map((s) => mk('circle', { r: 4.5, stroke: '#14263a', 'stroke-width': 2, fill: hcSlot(s.id), visibility: 'hidden' }));
     const show = (i) => {
       i = Math.max(0, Math.min(n - 1, i)); hc.hover = i; const xx = x(i);
@@ -630,6 +637,7 @@
       const row = (col, name, v, dim) => { const r = document.createElement('div'); r.className = 'r'; const sw = document.createElement('i'); sw.style.background = col; if (dim) sw.style.opacity = 0.7; const nm = document.createElement('span'); nm.className = 'n'; nm.textContent = name; const vv = document.createElement('span'); vv.className = 'tv'; vv.textContent = v == null ? '—' : fmtHs(v); r.append(sw, nm, vv); tip.appendChild(r); };
       d.series.forEach((s, k) => { const v = s.points[i]; row(hcSlot(s.id), s.name, v); if (v == null) dots[k].setAttribute('visibility', 'hidden'); else { dots[k].setAttribute('cx', xx); dots[k].setAttribute('cy', y(v)); dots[k].setAttribute('visibility', 'visible'); } });
       if (multi) row('var(--text)', 'Total', d.total[i], true);
+      for (const b of blocks) if (b.i === i) { const r = document.createElement('div'); r.className = 'r'; const g = document.createElement('i'); g.style.cssText = 'width:8px;height:8px;background:var(--text);transform:rotate(45deg);border-radius:1px'; const nm = document.createElement('span'); nm.className = 'n'; nm.textContent = 'Block found'; const vv = document.createElement('span'); vv.className = 'tv'; vv.textContent = b.name; r.append(g, nm, vv); tip.appendChild(r); }
       tip.hidden = false; const pw = $('hcPlot').clientWidth, tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(pw - tw, xx + 12 > pw - tw ? xx - tw - 12 : xx + 12)) + 'px';
     };
     const hide = () => { hc.hover = -1; tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')); };
@@ -638,9 +646,9 @@
     svg.onkeydown = (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); show((hc.hover < 0 ? n - 1 : hc.hover) + (e.key === 'ArrowLeft' ? -1 : 1)); } else if (e.key === 'Escape') hide(); };
     // table view: newest first, one row per bucket that has data
     const tw = $('hcTableWrap'); tw.textContent = ''; const tb = document.createElement('table'), hr = tb.createTHead().insertRow();
-    for (const h of ['Time', ...d.series.map((s) => s.name), ...(multi ? ['Total'] : [])]) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); }
+    for (const h of ['Time', ...d.series.map((s) => s.name), ...(multi ? ['Total'] : []), ...(blocks.length ? ['Blocks'] : [])]) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); }
     const body = tb.createTBody();
-    for (let i = n - 1; i >= 0; i--) { if (d.total[i] == null) continue; const tr = body.insertRow(); tr.insertCell().textContent = hcTime(d.from + i * d.step, true); for (const s of d.series) tr.insertCell().textContent = s.points[i] == null ? '—' : fmtHs(s.points[i]); if (multi) tr.insertCell().textContent = fmtHs(d.total[i]); }
+    for (let i = n - 1; i >= 0; i--) { if (d.total[i] == null) continue; const tr = body.insertRow(); tr.insertCell().textContent = hcTime(d.from + i * d.step, true); for (const s of d.series) tr.insertCell().textContent = s.points[i] == null ? '—' : fmtHs(s.points[i]); if (multi) tr.insertCell().textContent = fmtHs(d.total[i]); if (blocks.length) tr.insertCell().textContent = blocks.filter((b) => b.i === i).map((b) => b.name).join(', '); }
     tw.appendChild(tb);
   }
   function hcLoad() { const r = hc.range; return window.safex.chartRigs(r).then((c) => { if (r === hc.range) { hc.data = c; hcDraw(); } }).catch(() => {}); }

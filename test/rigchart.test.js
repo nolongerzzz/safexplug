@@ -16,3 +16,17 @@ assert.strictEqual(r.series.length, MAX_SERIES); assert.strictEqual(r.series[MAX
 assert.strictEqual(r.total[0], many.reduce((a, _, i) => a + 10 + i, 0));
 assert.strictEqual(build('bogus', [], 1e6).step, 600);
 console.log('rigchart tests passed');
+{
+  const { BlockLog } = require('../src/core/blocklog'); const os = require('os'), fs = require('fs'), path = require('path');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bl-')), 'b.json'); const b = new BlockLog(f);
+  assert.strictEqual(b.note('a', 'A', 0, true, 1000), 0, 'first look only sets the baseline');
+  assert.strictEqual(b.note('a', 'A', 1, true, 1060), 1); assert.strictEqual(b.note('a', 'A', 1, true, 1120), 0);
+  assert.strictEqual(b.note('a', 'A', 0, true, 1180), 0, 'restart resets, no event');
+  assert.strictEqual(b.note('a', 'A', 1, false, 1240), 0, 'pool mode never records');
+  assert.strictEqual(b.note('a', 'A', 3, true, 1300), 2);
+  assert.strictEqual(new BlockLog(f).events.length, 3, 'persisted');
+  const fk = (pts) => ({ series: (w, s) => { const a = new Array(Math.ceil(w / s)).fill(null); for (const i in pts) a[i] = pts[i]; return a; } });
+  const r = build('1h', [{ id: 'a', name: 'A', log: fk({ 10: 5, 11: 5 }) }], 10000, [{ t: 10000 - 3600 + 60 * 10 + 5, id: 'a', name: 'A' }, { t: 5, id: 'a', name: 'A' }, { t: 9990, id: 'gone', name: 'G' }]);
+  assert.strictEqual(r.blocks.length, 2, 'out-of-range event dropped'); assert.strictEqual(r.blocks[0].i, 10); assert.strictEqual(r.blocks[1].id, 'other');
+  console.log('blocklog tests passed');
+}

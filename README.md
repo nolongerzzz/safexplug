@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.12
+
+- **Found blocks on the hashrate chart (solo mode only).** A diamond in the miner's color marks the moment each rig found a block. It also shows in the hover box, in the Table view and in the legend count. In pool mode nothing is recorded or shown. Blocks are remembered for 30 days (blocks-log.json).
+
 ## What's new in 3.3.11
 
 - **Hashrate chart on the Rigs page.** One line per miner (this machine and every rig, including ones that report to your main computer) plus a dashed Total, so you can see rises and dips. Ranges: 1 h, 6 h, 24 h, 7 d. Hover (or use the arrow keys) for exact values; the Table button shows the same numbers as a list. A miner that stops shows as a dip to zero.

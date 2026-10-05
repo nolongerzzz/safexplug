@@ -10,6 +10,7 @@ fs.writeFileSync(path.join(ud, 'hashrate-log.json'), JSON.stringify(gen(2400, [[
 const rigs = [['Garage rig', '10.0.0.7', 18080, 1500, [[50000, 42000], [9000, 7000]], 86400], ['Mac laptop', '10.0.0.9', 18080, 700, [], 40000]];
 fs.mkdirSync(path.join(ud, 'rig-logs'));
 for (const [, h, p, b, d, st] of rigs) fs.writeFileSync(path.join(ud, 'rig-logs', crypto.createHash('sha1').update(`${h}:${p}`).digest('hex').slice(0, 12) + '.json'), JSON.stringify(gen(b, d, st)));
+fs.writeFileSync(path.join(ud, 'blocks-log.json'), JSON.stringify([{ t: now - 3 * 3600, id: 'self', name: 'This machine' }, { t: now - 5000, id: '10.0.0.7:18080', name: 'Garage rig' }, { t: now - 20000, id: 'self', name: 'This machine' }]));
 require('../src/main.js');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 app.whenReady().then(async () => {
@@ -17,7 +18,7 @@ app.whenReady().then(async () => {
   const w = BrowserWindow.getAllWindows()[0]; w.setSize(900, 900);
   const shot = async (n) => fs.writeFileSync(path.join(OUT, n), (await w.webContents.capturePage()).toPNG());
   const js = (c) => w.webContents.executeJavaScript(c);
-  await js(`window.safex.setSettings({rigs:${JSON.stringify(rigs.map(([n, h, p]) => ({ name: n, host: h, port: p, token: '' })))}})`);
+  await js(`window.safex.setSettings({mode:'solo',rigs:${JSON.stringify(rigs.map(([n, h, p]) => ({ name: n, host: h, port: p, token: '' })))}})`);
   await wait(4000); await js(`document.getElementById('tabBtnRigs').click()`); await wait(1500);
   await shot('rigs-24h.png');
   await js(`document.querySelector('#hcRange button[data-r="6h"]').click()`); await wait(800);
