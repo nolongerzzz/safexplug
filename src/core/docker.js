@@ -206,9 +206,26 @@ function pkexecScript(script) {
 const installDockerLinux = () => pkexecScript(LINUX_INSTALL_SCRIPT);
 const startDockerEngineLinux = () => pkexecScript(LINUX_START_SCRIPT);
 
+// Mac: Docker Desktop is an ordinary app, so "start" means opening it. No password prompt from us.
+function startDockerApp() {
+  const s = new EventEmitter();
+  s.stop = () => {};
+  if (process.platform !== 'darwin') {
+    setImmediate(() => { s.emit('line', 'Open the Docker app yourself, then come back.'); s.emit('exit', 1); });
+    return s;
+  }
+  const p = spawn('/usr/bin/open', ['-a', 'Docker'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let buf = '';
+  const feed = (d) => { buf += d.toString(); };
+  p.stdout.on('data', feed); p.stderr.on('data', feed);
+  p.on('error', (e) => { s.emit('line', 'ERROR: ' + e.message); s.emit('exit', 1); });
+  p.on('exit', (c) => { if (buf.trim()) s.emit('line', buf.trim()); s.emit('exit', c); });
+  return s;
+}
+
 module.exports = {
   rpcRestricted,
   run, Streamer, CONTAINER, IMAGE, VOLUME, STOP_SECONDS, dockerBinary, status, runArgs, startNode, stopNode, rpcExposure, recreateNode,
-  buildImage, followLogs, installPlan, installDockerLinux, startDockerEngineLinux,
+  buildImage, followLogs, installPlan, installDockerLinux, startDockerEngineLinux, startDockerApp,
   LINUX_INSTALL_SCRIPT, LINUX_START_SCRIPT,
 };

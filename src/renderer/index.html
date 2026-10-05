@@ -112,7 +112,21 @@
   </div>
 
   <div id="nodeView" class="view" hidden>
-    <section class="panel">
+    <section class="panel choice" id="nodeChoice" hidden>
+      <div class="k">No node on this computer yet</div>
+      <div class="choices">
+        <div class="opt">
+          <div class="v">Use another computer's node</div>
+          <div class="hint">Best if a node already runs elsewhere, like your Linux rig. Takes you to the Mine tab to type its address. Nothing to download.</div>
+          <button id="useOther" class="go small">Use another node</button>
+        </div>
+        <div class="opt">
+          <div class="v">Run my own node here</div>
+          <div class="hint">Use the button below. It needs Docker, then downloads about 100 MB and syncs the whole chain, which takes a long while.</div>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="nodeMain">
       <div class="nodehead">
         <div>
           <div class="k">Node (safexd in Docker)</div>

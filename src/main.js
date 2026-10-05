@@ -115,6 +115,19 @@ async function nodeAction(action) {
         break;
       }
       case 'start-engine': {
+        if (process.platform === 'darwin') {
+          note('Opening Docker. Wait for the whale icon in the menu bar to stop moving; this can take a minute or two.');
+          const code = await runStreamed('Opening Docker…', docker.startDockerApp());
+          if (code !== 0) { note('Could not open Docker. Is Docker Desktop installed? Open it yourself, then come back.'); break; }
+          nodeBusy = 'Waiting for Docker to finish starting…'; sendPanel();
+          let ready = false;
+          for (let i = 0; i < 60 && !ready; i++) {
+            await new Promise((r) => setTimeout(r, 3000));
+            dockerStatus = await docker.status(); ready = dockerStatus.engine === 'ok';
+          }
+          note(ready ? 'Docker is ready.' : 'Docker is still starting. Finish any prompt in the Docker window; this page will update on its own.');
+          break;
+        }
         note('Starting Docker. A password prompt may appear.');
         const code = await runStreamed('Starting Docker…', docker.startDockerEngineLinux());
         note(code === 0 ? 'Docker is ready.' : 'Could not start Docker (cancelled or failed).');

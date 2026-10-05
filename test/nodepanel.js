@@ -30,6 +30,10 @@ app.whenReady().then(async () => {
   // 4. fresh: engine ok, nothing built
   set('engine', 'ok'); await wait(6000); await show('fresh machine:');
   await snap('n1-fresh.png');
+  console.log('choice card shown:', await js(`!document.getElementById('nodeChoice').hidden`), '| main dimmed:', await js(`document.getElementById('nodeMain').classList.contains('idle')`));
+  await js(`document.getElementById('useOther').click()`); await wait(500);
+  console.log('use-another -> mine tab, solo mode, address focused:', await js(`!document.getElementById('mineView').hidden && !document.getElementById('soloRow').hidden && document.activeElement.id==='node'`));
+  await js(`document.getElementById('tabBtnNode').click()`); await wait(800);
   // 5. click Start node -> build -> run
   await js(`document.getElementById('nodeBtn').click()`); await wait(8000); await show('after Start click:');
   console.log('log has build+start lines:', await js(`(()=>{const t=document.getElementById('nLog').textContent;return /Building the node image|building the node image/i.test(t)&&/Successfully tagged/.test(t)})()`));

@@ -342,8 +342,11 @@
         btn: linux ? 'Install Docker' : 'Get Docker',
         hint: linux ? 'One click. You will be asked for your password once.' : 'Opens the Docker download page. Install it, then come back.' };
     }
-    if (d.engine === 'down') return { state: 'Docker is not running', action: 'start-engine', btn: 'Start Docker',
-      hint: 'On Mac or Windows, open the Docker app instead.' };
+    if (d.engine === 'down') {
+      const linux = p.plan.kind === 'linux-apt';
+      return { state: 'Docker is not running', action: 'start-engine', btn: linux ? 'Start Docker' : 'Open Docker',
+        hint: linux ? 'One click. You will be asked for your password once.' : 'Opens the Docker app. Wait until its whale icon stops moving, then this page offers Start node.' };
+    }
     if (d.engine === 'no-permission') return { state: 'Docker needs access', action: 'start-engine', btn: 'Fix access',
       hint: 'Asks for your password once to let this app use Docker.' };
     if (d.container === 'running') return { state: 'Node running', action: 'stop', btn: 'Stop node',
@@ -373,6 +376,14 @@
     b.hidden = !step.btn; b.textContent = step.btn || ''; b.dataset.action = step.action || '';
     b.disabled = !step.btn; b.className = 'go small' + (step.action === 'stop' ? ' active' : '');
     const running = panel.docker.container === 'running';
+    // No node yet (nothing set up, or Docker not ready): grey out the dead gauges and offer the two ways forward.
+    const noNode = !panel.busy && (panel.docker.engine !== 'ok' || panel.docker.container === 'none');
+    const idle = !running && panel.docker.container !== 'restarting';
+    $('nodeMain').classList.toggle('idle', idle);
+    const none = panel.docker.engine !== 'ok' || panel.docker.container === 'none';
+    $('nodeMain').classList.toggle('nonode', none);
+    $('maintCard').classList.toggle('idle', none);
+    $('nodeChoice').hidden = !noNode;
     if (running && node && node.height) {
       $('nHeight').textContent = node.height.toLocaleString();
       $('nTarget').textContent = (node.target || node.height).toLocaleString();
@@ -385,6 +396,11 @@
       $('nodeFill').style.width = '0';
     }
   }
+  $('useOther').onclick = () => {
+    if (!running) setMode('solo');
+    showTab('mine');
+    setTimeout(() => { try { $('node').focus(); $('node').select(); } catch (_) {} }, 50);
+  };
   $('nodeBtn').onclick = async () => {
     const a = $('nodeBtn').dataset.action;
     if (!a) return;

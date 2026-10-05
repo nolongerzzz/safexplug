@@ -165,3 +165,9 @@ details.adv{gap:0}
 /* window too short for both: scroll the whole tab (output keeps a fixed height) rather than hide Start */
 @media(max-height:700px){#mineView{overflow-y:auto}#mineView>.viewport{flex:0 0 220px}}
 #exTxBlock{margin-top:10px;align-self:flex-start}
+
+/* Node tab with no running node: gauges and maintenance sit back; the next-step button stays live. */
+#nodeMain.idle .progress,#nodeMain.idle .nodestats,#nodeMain.nonode label.check,#nodeMain.nonode #shareHint,#maintCard.idle{opacity:.4;pointer-events:none}
+#nodeMain.idle .nodehead .go{opacity:1}
+.choice .choices{display:flex;gap:12px;flex-wrap:wrap}
+.choice .opt{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px}
