@@ -6,10 +6,19 @@ set -euo pipefail
 ME="${SUDO_USER:-$(id -un)}"
 [ "$(id -u)" -ne 0 ] || [ -n "${SAFEX_TEST_ROOT:-}" ] || { echo "Run this as your normal user, not with sudo."; exit 1; }
 R="${SAFEX_TEST_ROOT:-}"                       # only set by tests
-APP="$(command -v safex-community-miner || true)"
-[ -n "$R" ] && APP="${APP:-/usr/bin/safex-community-miner}"
-[ -n "$APP" ] || { echo "Install the app first (./build-deb.sh)."; exit 1; }
-APP="$(readlink -f "$APP" 2>/dev/null || echo "$APP")"
+# Prefer running THIS folder (so the in-app Update button works and updates just drop in);
+# fall back to the installed .deb app if there is no electron in the folder.
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -x "$DIR/node_modules/.bin/electron" ] && [ -f "$DIR/package.json" ]; then
+  RUN="\"$DIR/node_modules/electron/dist/electron\" \"$DIR\""; ICONFILE="$DIR/src/public/images/icon.png"; MODE=folder
+else
+  APP="$(command -v safex-community-miner || true)"
+  [ -n "$R" ] && APP="${APP:-/usr/bin/safex-community-miner}"
+  [ -n "$APP" ] || { echo "Run 'npm install' in $DIR first, or install the app (./build-deb.sh)."; exit 1; }
+  APP="$(readlink -f "$APP" 2>/dev/null || echo "$APP")"
+  RUN="\"$APP\""; ICONFILE="safex-community-miner"; MODE=deb
+fi
+echo "Launcher will run: $MODE copy"
 HOME_DIR="${HOME}"
 SUDO="sudo"; [ -n "$R" ] && SUDO=""
 BIN="$R/usr/local/bin/safex-miner-root"
@@ -28,7 +37,7 @@ U="\${SUDO_USER:-}"
 [ -n "\$U" ] || exit 1
 H="\$(getent passwd "\$U" | cut -d: -f6)"
 modprobe msr 2>/dev/null || true
-exec "$APP" --no-sandbox --disable-gpu --user-data-dir="\$H/.config/Safex Community Miner"
+exec $RUN --no-sandbox --disable-gpu --user-data-dir="\$H/.config/Safex Community Miner"
 WRAP
 $SUDO install -o root -g root -m 0755 "$TMP" "$BIN"
 
@@ -57,7 +66,7 @@ echo "vm.nr_hugepages=1280" | $SUDO tee "$SYSCTL" >/dev/null
 # 5. Menu entry + login autostart. Any older autostart entry for the app is set aside so two copies don't fight.
 APPS="$HOME_DIR/.local/share/applications"; AUTO="$HOME_DIR/.config/autostart"
 mkdir -p "$APPS" "$AUTO"
-ICON="safex-community-miner"
+ICON="$ICONFILE"
 DESK="[Desktop Entry]
 Type=Application
 Name=Safex HomeBase Node+Mine (full speed)

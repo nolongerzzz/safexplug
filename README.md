@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.14
+
+- **Full-speed launcher now runs this folder.** Re-run `bash tools/install-root-launcher.sh` once and the "full speed" menu entry and login autostart start the copy in this folder (with root, so CPU tuning applies) instead of the installed .deb. That makes the Update button work at full speed, and updates just drop in. If the folder has no electron it falls back to the .deb. Note: because root now runs the files in this folder, keep the folder writable only by you.
+
 ## What's new in 3.3.13
 
 - **Update button.** Download `safex-miner-<version>-update.tar.xz` into your Downloads folder and an "Update to <version>" button appears in the header (click it twice: the second click confirms). The app unpacks the file over its own folder, keeps a backup of what it replaced (settings folder, `update-backup`), and restarts. It also works when the app was started by the full-speed launcher: it finds your Downloads folder and hands the new files back to you, not root. It refuses files that touch anything outside the app's own folders. Only works for the folder install (not a packaged .deb).
