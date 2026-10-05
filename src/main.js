@@ -379,7 +379,7 @@ app.whenReady().then(() => {
       wallet: s.address || '', version: app.getVersion() };
   };
   collector = new Collector(app.getPath('userData'), selfPayload);
-  reporter = new Reporter(() => settings.get().reportTo, selfPayload);
+  reporter = new Reporter(() => settings.get().reportTo, selfPayload, { getLast: () => settings.get().reportLast, onFound: (hp) => settings.set({ reportLast: hp }) });
   applyReporting();
 
   miner.on('log', (l) => send('miner:log', l));

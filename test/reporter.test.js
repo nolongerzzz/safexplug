@@ -27,7 +27,17 @@ const ID = 'rig-1234abcd';
   rep.start(); await wait(5600);
   assert.ok(rep.target() && rep.target().how === 'found' && rep.target().port === 28090); ok('rig finds the collector by itself from its announcement');
   await rep.send(); await wait(100); assert.ok(col.list().some((r) => r.id === ID && r.hashrate === 4100)); ok('and its stats show up with no address, token or setup');
-  rep.stop(); col.stop();
+  rep.stop();
+  // Remembering the main computer: after one discovery a rig goes straight to the saved address and does not listen at all
+  // (no listening = no Mac firewall prompt on later launches).
+  let saved = ''; const rem = new Reporter(() => '', () => ({ id: ID, name: 'Mac', hashrate: 4200, mining: true }), { getLast: () => saved, onFound: (hp) => { saved = hp; } });
+  rem.start(); await wait(5600); assert.ok(/:28090$/.test(saved)); rem.stop(); ok('first discovery remembers the main computer');
+  const rem2 = new Reporter(() => '', () => ({ id: ID, name: 'Mac', hashrate: 4300, mining: true }), { getLast: () => saved, onFound: () => {} });
+  rem2.start(); assert.strictEqual(rem2.sock, null); assert.strictEqual(rem2.target().how, 'remembered');
+  await rem2.send(); await wait(100); assert.ok(col.list().some((r) => r.id === ID && r.hashrate === 4300)); rem2.stop(); ok('next launch uses the remembered address and opens no listening socket');
+  const rem3 = new Reporter(() => '', () => ({ id: ID, name: 'Mac' }), { getLast: () => '127.0.0.1:1', onFound: () => {} });
+  rem3.start(); assert.strictEqual(rem3.sock, null); for (let i = 0; i < 3; i++) await rem3.send(); assert.ok(rem3.sock); rem3.stop(); ok('if the remembered address stops answering, it listens again to find the main computer');
+  col.stop();
   const typed = new Reporter(() => '127.0.0.1:28090', () => ({ id: ID, name: 'Remote', hashrate: 1 })); col.start(); await wait(200);
   assert.strictEqual(typed.target().how, 'typed'); assert.ok(await typed.send()); ok('a typed address (remote rigs) works the same way');
   col.stop(); typed.stop();

@@ -61,19 +61,29 @@ class Collector {
 
 class Reporter {
   // getTarget() -> "host:port" typed by the user or ''; getPayload() -> report object
-  constructor(getTarget, getPayload) { this.getTarget = getTarget; this.getPayload = getPayload; this.found = null; this.sock = null; this.timer = null; this.last = { ok: false, at: 0 }; this.peers = []; }
+  // opts.getLast() -> "host:port" of the main computer remembered from an earlier run; opts.onFound(hostport) saves it.
+  // Listening for the main computer's announcement is what makes the Mac firewall ask "accept incoming connections?",
+  // so a rig only listens until it has found the main computer once, then goes straight to the remembered address.
+  constructor(getTarget, getPayload, opts) { this.getTarget = getTarget; this.getPayload = getPayload; this.opts = opts || {}; this.found = null; this.sock = null; this.timer = null; this.last = { ok: false, at: 0 }; this.peers = []; this.fails = 0; }
+  typed() { const t = String(this.getTarget() || '').trim(); const m = /^([A-Za-z0-9.\-]+):(\d{1,5})$/.exec(t); return m ? { host: m[1], port: Number(m[2]), how: 'typed' } : null; }
+  remembered() { const t = String((this.opts.getLast && this.opts.getLast()) || '').trim(); const m = /^([A-Za-z0-9.\-]+):(\d{1,5})$/.exec(t); return m ? { host: m[1], port: Number(m[2]), how: 'remembered' } : null; }
   target() {
-    const t = String(this.getTarget() || '').trim(); const m = /^([A-Za-z0-9.\-]+):(\d{1,5})$/.exec(t);
-    if (m) return { host: m[1], port: Number(m[2]), how: 'typed' };
-    return this.found && Date.now() - this.found.at < 30000 ? { ...this.found, how: 'found' } : null;
+    const t = this.typed(); if (t) return t;
+    if (this.found && Date.now() - this.found.at < 30000) return { ...this.found, how: 'found' };
+    return this.remembered();
+  }
+  listen() {
+    if (this.sock) return;
+    try {
+      this.sock = dgram.createSocket({ type: 'udp4', reuseAddr: true }); this.sock.on('error', () => {});
+      this.sock.on('message', (msg, rinfo) => { const m = new RegExp(`^${MAGIC} (\\d{1,5})$`).exec(String(msg)); if (m) { this.found = { host: rinfo.address, port: Number(m[1]), at: Date.now() };
+        try { const hp = `${rinfo.address}:${m[1]}`; const cur = this.remembered(); if (this.opts.onFound && (!cur || cur.host + ':' + cur.port !== hp)) this.opts.onFound(hp); } catch (_) {} } });
+      this.sock.bind(DISCOVER_PORT);
+    } catch (_) {}
   }
   start() {
     if (this.timer) return;
-    try {
-      this.sock = dgram.createSocket({ type: 'udp4', reuseAddr: true }); this.sock.on('error', () => {});
-      this.sock.on('message', (msg, rinfo) => { const m = new RegExp(`^${MAGIC} (\\d{1,5})$`).exec(String(msg)); if (m) this.found = { host: rinfo.address, port: Number(m[1]), at: Date.now() }; });
-      this.sock.bind(DISCOVER_PORT);
-    } catch (_) {}
+    if (!this.typed() && !this.remembered()) this.listen();
     this.timer = setInterval(() => this.send(), 5000); this.send();
   }
   stop() { clearInterval(this.timer); this.timer = null; try { this.sock && this.sock.close(); } catch (_) {} this.sock = null; }
@@ -82,8 +92,8 @@ class Reporter {
     const body = JSON.stringify(this.getPayload());
     return new Promise((resolve) => {
       const req = http.request({ host: t.host, port: t.port, path: '/report', method: 'POST', timeout: 3000, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => { let rb = ''; res.on('data', (d) => { if (rb.length < 65536) rb += d; }); res.on('end', () => { try { const j = JSON.parse(rb); this.peers = (Array.isArray(j.rigs) ? j.rigs : []).map((r) => ({ ...clean(r), online: !!r.online, main: !!r.main })).filter((r) => r.id); } catch (_) {} });
-        this.last = { ok: res.statusCode === 204 || res.statusCode === 200, at: Date.now(), to: `${t.host}:${t.port}`, how: t.how }; resolve(this.last.ok); });
-      req.on('timeout', () => req.destroy()); req.on('error', () => { this.peers = []; this.last = { ok: false, at: Date.now(), why: 'collector not answering' }; resolve(false); });
+        this.last = { ok: res.statusCode === 204 || res.statusCode === 200, at: Date.now(), to: `${t.host}:${t.port}`, how: t.how }; if (this.last.ok) this.fails = 0; resolve(this.last.ok); });
+      req.on('timeout', () => req.destroy()); req.on('error', () => { this.peers = []; this.last = { ok: false, at: Date.now(), why: 'collector not answering' }; if (t.how === 'remembered' && ++this.fails >= 3) this.listen(); resolve(false); });
       req.end(body);
     });
   }
