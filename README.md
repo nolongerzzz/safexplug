@@ -263,4 +263,4 @@ MIT
 
 ## Engine note (solo mining)
 
-Solo mode needs xmrig 6.26 or newer. Older xmrig (6.16.2, still bundled for Mac and Windows) asks the node for a block template with `extra_nonce`, which `safexd` rejects with `Internal error: failed to create block template (-5)`; newer xmrig sends `reserve_size`, which works. Linux ships 6.26.0. Mac/Windows builds need the same engine swap before solo mode will work there. xmrig is GPL-3.0 and runs as a separate program next to this MIT app.
+Solo mode needs xmrig 6.26 or newer. Older xmrig (6.16.2) asks the node for a block template with `extra_nonce`, which `safexd` rejects with `Internal error: failed to create block template (-5)`; newer xmrig sends `reserve_size`, which works. Linux ships 6.26.0, the Windows build is now the patched 6.26.0 too (cross-built with `tools/build-win-xmrig.sh`, TLS pools not included; solo and plain pools work), and Mac builds its own with `tools/build-mac-xmrig.sh`. xmrig is GPL-3.0 and runs as a separate program next to this MIT app.
