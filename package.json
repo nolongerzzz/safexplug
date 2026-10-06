@@ -1,7 +1,7 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "3.3.14",
+  "version": "3.3.15",
   "description": "Safex Community Miner",
   "main": "src/main.js",
   "scripts": {
@@ -45,7 +45,7 @@
       "category": "Utility",
       "maintainer": "Safex community <noreply@example.invalid>",
       "desktop": {
-        "Name": "Safex HomeBase Node+Mine",
+        "Name": "Safex SOLO-SYNC Node+Mine",
         "Comment": "Safex Cash mining and node, with your own wallet one click away"
       }
     },

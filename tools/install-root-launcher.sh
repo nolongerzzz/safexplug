@@ -69,7 +69,7 @@ mkdir -p "$APPS" "$AUTO"
 ICON="$ICONFILE"
 DESK="[Desktop Entry]
 Type=Application
-Name=Safex HomeBase Node+Mine (full speed)
+Name=Safex SOLO-SYNC Node+Mine (full speed)
 Comment=Starts the miner with root so CPU tuning applies
 Exec=/usr/local/bin/safex-miner-launch
 Icon=$ICON

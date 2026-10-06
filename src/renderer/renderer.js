@@ -20,7 +20,7 @@
   let stats = {};
 
   $('cpuModel').textContent = `${init.cpuModel} · ${init.cores} threads`;
-  $('foot').textContent = `Safex HomeBase Node+Mine ${init.version} · MIT · xmrig engine`;
+  $('foot').textContent = `Safex SOLO-SYNC Node+Mine ${init.version} · MIT · xmrig engine`;
 
   // ---- settings <-> form -------------------------------------------------
   function fillForm() {

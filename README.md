@@ -2,6 +2,12 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.15
+
+- **Renamed SAFEX SOLO-SYNC Node+Mine** (was HomeBase): window title, footer, menu entry, header logo and app icon. Re-run `bash tools/install-root-launcher.sh` to update the full-speed menu entry name.
+- The Mac engine build script (`tools/build-mac-xmrig.sh`) now builds libuv itself, so Mac solo mining works against a Safex node.
+- Update files must not include `src/resources` (it holds the platform mining engines, including the patched Mac one).
+
 ## What's new in 3.3.14
 
 - **Full-speed launcher now runs this folder.** Re-run `bash tools/install-root-launcher.sh` once and the "full speed" menu entry and login autostart start the copy in this folder (with root, so CPU tuning applies) instead of the installed .deb. That makes the Update button work at full speed, and updates just drop in. If the folder has no electron it falls back to the .deb. Note: because root now runs the files in this folder, keep the folder writable only by you.
