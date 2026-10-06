@@ -20,7 +20,8 @@ function dockerBinary() {
   const forced = process.env.SAFEX_DOCKER_BIN;
   if (forced) { try { if (fs.statSync(forced).isFile()) return forced; } catch (_) {} return null; }
   const cands = ['/usr/bin/docker', '/usr/local/bin/docker', '/opt/homebrew/bin/docker',
-    '/Applications/Docker.app/Contents/Resources/bin/docker'];
+    '/Applications/Docker.app/Contents/Resources/bin/docker',
+    ...(process.platform === 'win32' ? [path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Docker', 'Docker', 'resources', 'bin', 'docker.exe')] : [])];
   for (const c of cands) { try { if (fs.statSync(c).isFile()) return c; } catch (_) {} }
   for (const d of String(process.env.PATH || '').split(path.delimiter)) {
     const p = path.join(d, process.platform === 'win32' ? 'docker.exe' : 'docker');
