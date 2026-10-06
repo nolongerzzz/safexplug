@@ -23,7 +23,8 @@
     "appId": "com.electron.one-click-miner",
     "win": {
       "target": "nsis",
-      "icon": "src/public/images/icon.png"
+      "icon": "src/public/images/icon.png",
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "mac": {
       "category": "public.app-category.business",
@@ -54,7 +55,11 @@
     "files": [
       "src/**/*",
       "package.json"
-    ]
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "homepage": "https://github.com/safex/team-1-click-miner"
 }

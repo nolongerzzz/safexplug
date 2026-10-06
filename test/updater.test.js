@@ -5,6 +5,8 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'upd-'));
 assert.ok(U.cmp('3.3.12', '3.3.11') > 0 && U.cmp('3.3.9', '3.3.10') < 0 && U.cmp('3.4.0', '3.3.99') > 0 && U.cmp('1.0.0', '1.0.0') === 0);
 assert.strictEqual(U.homeFromUserData('/home/user/.config/Safex Community Miner'), '/home/user');
 assert.strictEqual(U.homeFromUserData('/Users/zb/Library/Application Support/x'), '/Users/zb');
+assert.strictEqual(U.homeFromUserData('C:\\Users\\zb\\AppData\\Roaming\\x'), 'C:\\Users\\zb');
+assert.ok(!U.safeEntry('src\\..\\..\\evil') && U.safeEntry('src\\a.js'));
 for (const ok of ['package.json', 'src/main.js', './src/core/a.js', 'README.md', 'test/x.js']) assert.ok(U.safeEntry(ok), ok);
 for (const no of ['/etc/passwd', '../x', 'src/../../x', 'node_modules/a', '.ssh/id', 'package.json.bak', 'srcx/a']) assert.ok(!U.safeEntry(no), no);
 // find: newest newer package only, ignores other names

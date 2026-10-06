@@ -14,7 +14,8 @@ function cmp(a, b) { const x = verParts(a), y = verParts(b); for (let i = 0; i <
 
 // The real user's home, even when the app runs as root from the full-speed launcher.
 function homeFromUserData(userData) {
-  const m = /^(.*?)\/(?:\.config|Library)\//.exec(String(userData || ''));
+  // Linux ~/.config/..., macOS ~/Library/..., Windows C:\\Users\\name\\AppData\\Roaming\\...
+  const m = /^(.*?)[\\/](?:\.config|Library|AppData)[\\/]/.exec(String(userData || ''));
   return m && m[1] ? m[1] : os.homedir();
 }
 function downloadDirs(userData) { return [...new Set([path.join(homeFromUserData(userData), 'Downloads'), path.join(os.homedir(), 'Downloads')])]; }
@@ -37,7 +38,7 @@ function findUpdate({ prefix, current, dirs }) {
 
 // Every path in the package must be relative, free of "..", and inside the allowed set.
 function safeEntry(name) {
-  const n = String(name).replace(/^\.\//, '');
+  const n = String(name).replace(/\\/g, '/').replace(/^\.\//, '');
   if (!n || path.isAbsolute(n) || n.split('/').includes('..') || n.includes('\0')) return false;
   return ALLOWED.some((a) => (a.endsWith('/') ? n === a.slice(0, -1) || n.startsWith(a) : n === a));
 }

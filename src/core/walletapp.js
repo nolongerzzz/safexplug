@@ -10,9 +10,13 @@ const NAMES = ['safex-wallet', 'Safex-Wallet', 'safex-homebase', 'Safex-HomeBase
 // script) matters: that script needs "node" on the PATH, and a program opened from a Dock icon or launcher has no PATH,
 // so the wallet button silently did nothing there.
 function electronBin(dir, platform = process.platform) {
-  const direct = platform === 'darwin' ? path.join(dir, 'node_modules', 'electron', 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron')
-    : path.join(dir, 'node_modules', 'electron', 'dist', 'electron');
-  for (const f of [direct, path.join(dir, 'node_modules', '.bin', 'electron')]) { try { fs.accessSync(f, fs.constants.X_OK); return f; } catch (_) {} }
+  const dist = path.join(dir, 'node_modules', 'electron', 'dist');
+  const direct = platform === 'darwin' ? path.join(dist, 'Electron.app', 'Contents', 'MacOS', 'Electron')
+    : platform === 'win32' ? path.join(dist, 'electron.exe')
+    : path.join(dist, 'electron');
+  // on Windows the .bin entry is a .cmd script, which needs the shell, so only the real electron.exe is used
+  const alt = platform === 'win32' ? [] : [path.join(dir, 'node_modules', '.bin', 'electron')];
+  for (const f of [direct, ...alt]) { try { fs.accessSync(f, platform === 'win32' ? fs.constants.F_OK : fs.constants.X_OK); return f; } catch (_) {} }
   return null;
 }
 function valid(dir) {
@@ -38,7 +42,7 @@ function realUser(env = process.env, passwd = '/etc/passwd', isRoot = typeof pro
 // A folder the person chose wins, then SAFEX_WALLET_APP_DIR (tests), then the usual places in the home folder.
 function find({ chosen = '', home, env = process.env, platform = process.platform, user = realUser(env) } = {}) {
   home = home || (user && user.home) || os.homedir();
-  if (platform !== 'linux' && platform !== 'darwin') return { found: false, reason: 'platform' };
+  if (platform !== 'linux' && platform !== 'darwin' && platform !== 'win32') return { found: false, reason: 'platform' };
   const tries = [chosen, env.SAFEX_WALLET_APP_DIR, ...NAMES.map((n) => path.join(home, n))].filter(Boolean);
   for (const d of tries) if (valid(d)) return { found: true, dir: d };
   return { found: false, reason: 'missing' };
@@ -49,7 +53,7 @@ function find({ chosen = '', home, env = process.env, platform = process.platfor
 function launch(dir, spawnFn = spawn, user = realUser(), platform = process.platform) {
   try {
     const bin = electronBin(dir, platform); if (!bin) return { ok: false, error: 'Could not start the wallet: its Electron program is missing. Run npm install in the wallet folder.' };
-    const opts = { cwd: dir, detached: true, stdio: 'ignore' };
+    const opts = { cwd: dir, detached: true, stdio: 'ignore', windowsHide: true };
     if (user) { opts.uid = user.uid; opts.gid = user.gid; opts.env = { ...process.env, HOME: user.home, USER: user.name, LOGNAME: user.name }; delete opts.env.SUDO_USER; delete opts.env.SUDO_UID; delete opts.env.SUDO_GID; }
     const child = spawnFn(bin, ['.', '--no-sandbox'], opts);
     child.on && child.on('error', () => {});
