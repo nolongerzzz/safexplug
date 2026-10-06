@@ -24,8 +24,8 @@ if [ -z "$BREW" ]; then
   echo '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
   exit 1
 fi
-echo "3/5 Installing build ingredients (cmake, libuv, openssl)..."
-"$BREW" install cmake libuv openssl@3
+echo "3/5 Installing build ingredients (cmake, openssl)..."
+"$BREW" install cmake openssl@3
 
 echo "4/5 Getting the engine source and applying the Safex patch..."
 rm -rf "$WORK"; mkdir -p "$WORK"; cd "$WORK"
@@ -34,6 +34,20 @@ if ! curl -fsSL -o src.tgz https://github.com/xmrig/xmrig/archive/refs/tags/v6.2
 fi
 cd xmrig-6.26.0
 patch -p1 < "$PATCH"
+
+echo "   Building libuv (small, about a minute; Homebrew's copy needs a docs tool old macOS lacks)..."
+DEPS="$WORK/deps"; mkdir -p "$DEPS"
+cd "$WORK"
+rm -rf libuv-1.51.0
+if ! curl -fsSL -o uv.tgz https://github.com/libuv/libuv/archive/refs/tags/v1.51.0.tar.gz || ! tar xzf uv.tgz; then
+  rm -rf libuv-1.51.0; git clone --quiet --depth 1 --branch v1.51.0 https://github.com/libuv/libuv.git libuv-1.51.0
+fi
+cmake -S libuv-1.51.0 -B uvbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DLIBUV_BUILD_SHARED=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX="$DEPS" > "$WORK/uv-cmake.log" 2>&1 || { tail -20 "$WORK/uv-cmake.log"; exit 1; }
+cmake --build uvbuild -j"$(sysctl -n hw.ncpu)" > "$WORK/uv-make.log" 2>&1 || { tail -30 "$WORK/uv-make.log"; exit 1; }
+cmake --install uvbuild > /dev/null 2>&1 || { echo "libuv install failed"; exit 1; }
+[ -f "$DEPS/lib/libuv.a" ] || { echo "libuv did not build (no libuv.a in $DEPS/lib)"; exit 1; }
+cd "$WORK/xmrig-6.26.0"
 
 echo "5/5 Building (this is the long part)..."
 UVP="$DEPS"; SSL="$("$BREW" --prefix openssl@3)"
