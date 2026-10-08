@@ -2,6 +2,11 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.20
+
+- **One-click wallet tools on a Mac.** Payments tab, step 1 is now "Install wallet tools" on a Mac. It copies the official 7.0.3 wallet tools you built (from SOLO-SYNC Wallet's tools folder or `~/safexcore-build`), test-runs both, then step 2 opens Terminal for the one-time view-key entry, same as Linux.
+- **Use a different wallet.** The "Wallet tool address" box is now always shown under the setup, labeled for people who already have their own wallet: run its `safex-wallet-rpc` yourself and connect it by address (local only, incoming payments only).
+
 ## What's new in 3.3.19
 
 - **Miner comes to the front.** Clicking the Dock icon, or launching the miner while it is already open, now raises the window above the wallet instead of leaving it behind.
@@ -122,7 +127,7 @@ One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the 
 ## What's new in 3.0.5
 
 - **Mac builds now use xmrig 6.26.0** (Intel and Apple Silicon), the same version as Linux, so solo mining works on a Mac. Before, the Mac copy was 6.16.2, which the Safex node rejects.
-- **Running on a Mac without building an installer:** install Node.js, unpack the source, then `cd` into it, run `npm install` and `npm start`. If macOS blocks the miner as "unidentified developer", run `xattr -dr com.apple.quarantine .` in that folder once. Node tab (Docker) and the one-click wallet are Linux-only; on a Mac use "Pool" or "My node" pointed at a node you can reach.
+- **Running on a Mac without building an installer:** install Node.js, unpack the source, then `cd` into it, run `npm install` and `npm start`. If macOS blocks the miner as "unidentified developer", run `xattr -dr com.apple.quarantine .` in that folder once. Node tab (Docker) is Linux-only (the one-click wallet tools work on Mac too, copied from your own safexcore build); on a Mac use "Pool" or "My node" pointed at a node you can reach.
 
 ## What's new in 3.0.4
 

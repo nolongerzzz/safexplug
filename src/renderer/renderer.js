@@ -684,16 +684,16 @@
   function renderWs() {
     if (!ws) return;
     const st = $('wsState');
-    $('manualWallet').hidden = ws.supported;
+    $('manualWallet').hidden = false;
     $('wsRemove').hidden = !ws.wallet || $('payView').hidden; $('wsPanel').classList.toggle('done', !!ws.wallet); if (ws.wallet) wsLog.hidden = true;
     $('wsDl').disabled = ws.busy || ws.tools || !ws.supported;
-    $('wsDl').textContent = ws.tools ? '1. Wallet tools ready ✓' : ws.busy ? 'Downloading…' : '1. Download wallet tools';
+    $('wsDl').textContent = ws.tools ? '1. Wallet tools ready ✓' : ws.busy ? (ws.mac ? 'Installing…' : 'Downloading…') : (ws.mac ? '1. Install wallet tools' : '1. Download wallet tools');
     $('wsAdd').disabled = !ws.tools || ws.wallet || !ws.terminal;
     $('wsAdd').textContent = ws.wallet ? '2. Wallet added ✓' : '2. Add my wallet';
     if (!$('wsHeight').value && ws.nodeHeight) $('wsHeight').placeholder = 'e.g. ' + Math.max(0, ws.nodeHeight - 5000);
     let msg;
-    if (!ws.supported) msg = 'The one-click wallet tools are Linux-only for now. On this system, run the official safex-wallet-rpc yourself and enter its address below.';
-    else if (!ws.tools) msg = 'Step 1: download the official wallet tools (checked against the release checksums).';
+    if (!ws.supported) msg = 'The one-click wallet tools are Linux and Mac only for now. On this system, run the official safex-wallet-rpc yourself and enter its address below.';
+    else if (!ws.tools) msg = ws.mac ? 'Step 1: install the wallet tools. On a Mac they are copied from SOLO-SYNC Wallet or from your safexcore build, then test-run.' : 'Step 1: download the official wallet tools (checked against the release checksums).';
     else if (!ws.wallet) msg = ws.terminal ? 'Step 2: click "Add my wallet". A window opens; paste your address, then your private view key, there. "Scan from block" is where to start looking for payments (about when you started mining; earlier is safe but slower).' : 'No terminal program was found to open the wallet tool window.';
     else msg = ws.running ? 'Wallet tool is running and reading your node. It will catch up with the chain first, so the tally can lag until it has scanned.' : 'Wallet is set up. The wallet tool starts once your node answers.';
     st.textContent = msg;

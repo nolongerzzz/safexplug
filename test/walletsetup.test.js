@@ -33,6 +33,22 @@ const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
     });
   }
   srv.close();
+  await t('mac install copies built tools from a source folder, after test-running them', async () => {
+    const src = tmp(), d = tmp(), lines = [];
+    for (const f of ['safex-wallet-cli', 'safex-wallet-rpc']) fs.writeFileSync(path.join(src, f), '#!/bin/sh\necho "Safex 7.0.3"\n', { mode: 0o755 });
+    const r = WS.installMacTools(d, (l) => lines.push(l), [tmp(), src]); assert.ok(r.ok, r.error);
+    assert.ok(WS.status(d).tools); assert.ok(fs.statSync(WS.paths(d).rpc).mode & 0o100); assert.ok(lines.some((l) => /Copied/.test(l)));
+  });
+  await t('mac install refuses tools that do not start, and says what to do when none are found', async () => {
+    const src = tmp(), d = tmp();
+    for (const f of ['safex-wallet-cli', 'safex-wallet-rpc']) fs.writeFileSync(path.join(src, f), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    const r = WS.installMacTools(d, () => {}, [src]); assert.ok(!r.ok && /did not start/.test(r.error)); assert.ok(!WS.status(d).tools);
+    const r2 = WS.installMacTools(d, () => {}, [tmp()]); assert.ok(!r2.ok && /No wallet tools found/.test(r2.error));
+  });
+  await t('mac terminal opens the runner through Terminal', () => {
+    const f = WS.findTerminal(tmp(), true); if (!f) return;   // only where /usr/bin/open exists
+    assert.deepStrictEqual(f.mk('/x/add-wallet.command'), ['-a', 'Terminal', '/x/add-wallet.command']);
+  });
   await t('rpc args: local-only, no login, password from file, user node (NOT --restricted-rpc: it blocks get_transfers)', () => {
     const a = WS.rpcArgs('/d', '127.0.0.1:17402'); const j = a.join(' ');
     assert.ok(/--rpc-bind-ip 127\.0\.0\.1/.test(j) && /--disable-rpc-login/.test(j));
