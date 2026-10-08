@@ -17,6 +17,8 @@ const { HashLog } = require('./core/hashlog');
 const crypto = require('crypto');
 
 if (!app.requestSingleInstanceLock()) app.quit();
+// The version this folder's package.json says (app.getVersion() can report Electron's own number when started from a source folder).
+const pkgVer = () => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version; } catch (_) { return app.getVersion(); } };
 
 const miner = new Miner();
 let settings;
@@ -342,6 +344,8 @@ function createWindow() {
     },
   });
   win.setMenuBarVisibility(false);
+  // The window title always carries the version, from the very first moment (a relaunch after an update shows the new one at once).
+  const TITLE = `Safex SOLO-SYNC Node+Mine ${pkgVer()}`; win.setTitle(TITLE); win.on('page-title-updated', (e) => { e.preventDefault(); win.setTitle(TITLE); });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   // Never navigate the app window to a remote page; open links in the browser.
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
@@ -382,7 +386,7 @@ app.whenReady().then(() => {
     const st = miner.stats || {}, s = settings.get();
     return { id: s.rigId, name: s.name || os.hostname(), mining: miner.running, connected: !!st.connected, hashrate: miner.running ? (st.hashrate || 0) : 0,
       threads: st.threads || 0, accepted: st.accepted || 0, rejected: st.rejected || 0, uptime: miner.running && miningSince2 ? Math.floor((Date.now() - miningSince2) / 1000) : 0,
-      wallet: s.address || '', version: app.getVersion() };
+      wallet: s.address || '', version: pkgVer() };
   };
   collector = new Collector(app.getPath('userData'), selfPayload);
   reporter = new Reporter(() => settings.get().reportTo, selfPayload, { getLast: () => settings.get().reportLast, onFound: (hp) => settings.set({ reportLast: hp }) });
@@ -405,7 +409,7 @@ app.whenReady().then(() => {
     cpuModel: (os.cpus()[0] || {}).model || 'Unknown CPU',
     cores: os.cpus().length,
     platform: process.platform,
-    version: app.getVersion(),
+    version: pkgVer(),
   }));
   ipcMain.handle('settings:set', (_e, patch) => {
     patch = patch || {};

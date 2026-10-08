@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.22
+
+- **The window title always shows the version.** It is set the moment the window opens, so the window that appears after "Update" restarts the app already says which version it is (it used to say nothing until the page finished loading). The footer version also now reads this folder's own version file.
+
 ## What's new in 3.3.21
 
 - **Mac wallet-tool install check fixed.** The test-run no longer rejects wallet tools just because `--version` exits with a non-zero code; it only refuses tools that cannot launch or are missing a library.
