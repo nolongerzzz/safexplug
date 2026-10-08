@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.23
+
+- **Updates find a download your browser saved twice.** A file named like `safex-miner-3.3.23-update (1).tar.xz` is now recognised too.
+
 ## What's new in 3.3.22
 
 - **The window title always shows the version.** It is set the moment the window opens, so the window that appears after "Update" restarts the app already says which version it is (it used to say nothing until the page finished loading). The footer version also now reads this folder's own version file.

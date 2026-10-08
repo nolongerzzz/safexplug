@@ -14,6 +14,10 @@ const dl = tmp(); const big = Buffer.alloc(2000, 1);
 for (const n of ['safex-miner-3.3.10-update.tar.xz', 'safex-miner-3.3.12-update.tar.xz', 'safex-miner-3.3.11-update.tar.xz', 'safex-wallet-9.9.9-update.tar.xz', 'safex-miner-3.3.13-update.tar.xz.part', 'safex-miner-3.3.11-update (1).tar.xz']) fs.writeFileSync(path.join(dl, n), big);
 assert.strictEqual(U.findUpdate({ prefix: 'safex-miner', current: '3.3.10', dirs: [dl, '/nonexistent'] }).version, '3.3.12');
 assert.strictEqual(U.findUpdate({ prefix: 'safex-miner', current: '3.3.12', dirs: [dl] }), null);
+// a download saved twice by the browser: "name (1).tar.xz" is found and still has to be newer
+const dl2 = tmp(); fs.writeFileSync(path.join(dl2, 'safex-miner-3.3.20-update (1).tar.xz'), big); fs.writeFileSync(path.join(dl2, 'safex-miner-3.3.19-update(2).tar.xz'), big);
+assert.strictEqual(U.findUpdate({ prefix: 'safex-miner', current: '3.3.10', dirs: [dl2] }).version, '3.3.20');
+assert.strictEqual(U.findUpdate({ prefix: 'safex-miner', current: '3.3.20', dirs: [dl2] }), null);
 (async () => {
   // apply: real tarball into a fake app folder
   const app = tmp(), src = tmp();

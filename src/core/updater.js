@@ -22,9 +22,9 @@ function downloadDirs(userData) { return [...new Set([path.join(homeFromUserData
 
 const denied = new Set();
 
-// Newest package in the given folders that is newer than `current`; null if none.
+// Newest package in the given folders that is newer than `current`; null if none. A browser's "name (1).tar.xz" copy of a download counts too.
 function findUpdate({ prefix, current, dirs }) {
-  const re = new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(\\d+\\.\\d+\\.\\d+)-update\\.tar\\.xz$');
+  const re = new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(\\d+\\.\\d+\\.\\d+)-update(?: ?\\(\\d+\\))?\\.tar\\.xz$');
   let best = null;
   for (const dir of dirs) {
     // macOS asks the user before an app may read Downloads. A "no" is remembered here so the folder is not tried (and asked about) again.
