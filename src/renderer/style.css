@@ -186,3 +186,22 @@ details.adv{gap:0}
 #hcRange button{padding:4px 12px;font-size:12px}#hcRange{padding:2px}
 
 .upd{background:var(--accent);color:#06121e;border:0;border-radius:8px;padding:6px 12px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap}.upd:hover{filter:brightness(1.1)}.upd.arm{background:var(--warn)}.upd.err{background:var(--bad);color:#fff}.upd:disabled{opacity:.7;cursor:default}
+
+/* ---- Wide windows: use the whole width. The header stays put; on a wide window the controls and the logs sit side by side ---- */
+.app{max-width:none;padding-left:24px;padding-right:24px}
+@media (min-width:1300px){
+  #mineView:not([hidden]){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:minmax(0,1fr);gap:12px}
+  #mineView > .core{min-height:0;overflow:auto}
+  #mineView > .viewport{min-height:0;flex:none}
+  #nodeView:not([hidden]){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto auto minmax(0,1fr);gap:12px;align-content:stretch}
+  #nodeView > .panel{grid-column:1;align-self:start}
+  #nodeView > .viewport{grid-column:2;grid-row:1 / span 3;min-height:0;flex:none}
+  #rigsView:not([hidden]){display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;align-content:start}
+  #rigsView > .strip{grid-column:1 / -1}
+  #rigsView > #hcPanel{grid-column:1;grid-row:2 / span 4;align-self:start}
+  #rigsView > .panel:not(#hcPanel),#rigsView > details{grid-column:2}
+  #payView:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-content:start}
+  #payView > .strip,#payView > .charts{grid-column:1 / -1}
+  #payView > #wsPanel,#payView > #manualWallet{grid-column:1}
+  #payView > #payList{grid-column:2;grid-row:3 / span 2}
+}

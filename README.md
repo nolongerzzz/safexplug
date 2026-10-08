@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.18
+
+- **Wide window.** The app now uses the whole window width (it was a narrow column). On a wide window, Mine and Node put the controls on the left and the output log on the right, Rigs puts the chart beside the rig list, and Payments puts the wallet setup beside the payment list. Smaller windows keep the single column.
+
 ## What's new in 3.3.17
 
 - **On a Mac the miner no longer reads Downloads by itself.** The Update button shows "Check for update" on a Mac and only looks in Downloads when you press it, so switching between apps no longer raises a macOS permission popup. Linux and Windows still check on their own.
