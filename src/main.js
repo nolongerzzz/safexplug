@@ -528,10 +528,20 @@ app.whenReady().then(() => {
     if (s.autostart && s.address) beginAutostart();
   });
 
-  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); else bringToFront(); });
 });
 
-app.on('second-instance', () => { if (!win || win.isDestroyed()) { createWindow(); return; } if (win.isMinimized()) win.restore(); win.focus(); });
+// Bring the window to the very front. A plain focus() is ignored on a Mac while another app (the wallet) is in front, and some
+// Linux desktops refuse it too, so the window is also raised above the others for a moment.
+function bringToFront() {
+  if (!win || win.isDestroyed()) { createWindow(); return; }
+  if (win.isMinimized()) win.restore();
+  win.show();
+  if (process.platform === 'darwin' && app.focus) app.focus({ steal: true });
+  win.setAlwaysOnTop(true); win.focus(); if (win.moveTop) win.moveTop();
+  setTimeout(() => { try { win.setAlwaysOnTop(false); } catch (_) {} }, 500);
+}
+app.on('second-instance', () => bringToFront());
 app.on('before-quit', () => { if (hashLog) hashLog.save(); if (walletRpc) walletRpc.stop(); clearInterval(nodePoll); cancelAutostart(); miner.stop(); if (logStream) logStream.stop(); });
 // Closing the window: if mining or the node is running, the app keeps going in the background (so mining and the node
 // are not cut off); reopen it from the Dock or by launching it again. If neither is running, it quits fully.
