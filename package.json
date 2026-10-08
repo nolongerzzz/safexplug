@@ -1,0 +1,17 @@
+{
+  "name": "safex-wallet",
+  "version": "1.0.0",
+  "description": "SAFEX SOLO-SYNC Wallet: a desktop wallet for Safex Cash and Safex Token, synced against your own node.",
+  "main": "src/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "test": "node test/run.js && node test/updater.test.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "author": {
+    "name": "nolongerzzz"
+  }
+}

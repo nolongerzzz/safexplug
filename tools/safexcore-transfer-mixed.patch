@@ -1,0 +1,294 @@
+diff --git a/src/wallet/wallet.h b/src/wallet/wallet.h
+index 8e56b97..eb00f9c 100644
+--- a/src/wallet/wallet.h
++++ b/src/wallet/wallet.h
+@@ -720,6 +720,7 @@ namespace tools
+     std::vector<pending_tx> create_transactions(std::vector<cryptonote::tx_destination_entry> dsts, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, bool trusted_daemon);
+     std::vector<wallet::pending_tx> create_transactions_2(std::vector<cryptonote::tx_destination_entry> dsts, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon);     // pass subaddr_indices by value on purpose
+     std::vector<wallet::pending_tx> create_transactions_token(std::vector<cryptonote::tx_destination_entry> dsts, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon);
++    std::vector<wallet::pending_tx> create_transactions_mixed(std::vector<cryptonote::tx_destination_entry> dsts, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon);
+     std::vector<wallet::pending_tx> create_transactions_all(uint64_t below, const cryptonote::account_public_address &address, bool is_subaddress, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon);
+     std::vector<wallet::pending_tx> create_transactions_single(const crypto::key_image &ki, const cryptonote::account_public_address &address, bool is_subaddress, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, bool trusted_daemon);
+     std::vector<wallet::pending_tx> create_transactions_from(const cryptonote::account_public_address &address, bool is_subaddress, std::vector<size_t> unused_transfers_indices, std::vector<size_t> unused_dust_indices, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, bool trusted_daemon);
+diff --git a/src/wallet/wallet_rpc_server.h b/src/wallet/wallet_rpc_server.h
+index 2f4e953..61c8767 100644
+--- a/src/wallet/wallet_rpc_server.h
++++ b/src/wallet/wallet_rpc_server.h
+@@ -86,6 +86,7 @@ namespace tools
+         MAP_JON_RPC_WE("getheight",          on_getheight,          wallet_rpc::COMMAND_RPC_GET_HEIGHT)
+         MAP_JON_RPC_WE("transfer",           on_transfer,           wallet_rpc::COMMAND_RPC_TRANSFER)
+         MAP_JON_RPC_WE("transfer_token",     on_transfer_token,     wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN)
++        MAP_JON_RPC_WE("transfer_mixed",     on_transfer_mixed,     wallet_rpc::COMMAND_RPC_TRANSFER_MIXED)
+         MAP_JON_RPC_WE("transfer_split",     on_transfer_split,     wallet_rpc::COMMAND_RPC_TRANSFER_SPLIT)
+         MAP_JON_RPC_WE("transfer_token_split", on_transfer_token_split, wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN_SPLIT)
+         MAP_JON_RPC_WE("sweep_dust",         on_sweep_dust,         wallet_rpc::COMMAND_RPC_SWEEP_DUST)
+@@ -163,6 +164,7 @@ namespace tools
+       bool validate_transfer(const std::list<wallet_rpc::transfer_destination>& destinations, const std::string& payment_id, std::vector<cryptonote::tx_destination_entry>& dsts, std::vector<uint8_t>& extra, bool at_least_one_destination, epee::json_rpc::error& er, bool is_token);
+       bool validate_transfer_advanced(const std::list<wallet_rpc::transfer_destination> &destinations, const std::string &payment_id, std::vector<cryptonote::tx_destination_entry> &dsts, std::vector<uint8_t> &extra, bool at_least_one_destination, epee::json_rpc::error &er, safex::command_t cmd_type);
+       bool on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::request& req, wallet_rpc::COMMAND_RPC_TRANSFER::response& res, epee::json_rpc::error& er);
++      bool on_transfer_mixed(const wallet_rpc::COMMAND_RPC_TRANSFER_MIXED::request &req, wallet_rpc::COMMAND_RPC_TRANSFER_MIXED::response &res, epee::json_rpc::error &er);
+       bool on_transfer_token(const wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN::request &req, wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN::response &res, epee::json_rpc::error &er);
+       bool on_transfer_split(const wallet_rpc::COMMAND_RPC_TRANSFER_SPLIT::request& req, wallet_rpc::COMMAND_RPC_TRANSFER_SPLIT::response& res, epee::json_rpc::error& er);
+       bool on_transfer_token_split(const wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN_SPLIT::request& req, wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN_SPLIT::response& res, epee::json_rpc::error& er);
+diff --git a/src/wallet/wallet_rpc_server.cpp b/src/wallet/wallet_rpc_server.cpp
+index f49546a..79ad38e 100644
+--- a/src/wallet/wallet_rpc_server.cpp
++++ b/src/wallet/wallet_rpc_server.cpp
+@@ -1044,6 +1044,63 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
+     return true;
+ }
+ 
++//------------------------------------------------------------------------------------------------------------------------------
++bool wallet_rpc_server::on_transfer_mixed(
++    const wallet_rpc::COMMAND_RPC_TRANSFER_MIXED::request &req,
++    wallet_rpc::COMMAND_RPC_TRANSFER_MIXED::response &res,
++    epee::json_rpc::error &er)
++{
++    std::vector<cryptonote::tx_destination_entry> dsts;
++    std::vector<uint8_t> extra;
++
++    if (!m_wallet) return not_open(er);
++    if (m_wallet->restricted()) {
++        er.code = WALLET_RPC_ERROR_CODE_DENIED;
++        er.message = "Command unavailable in restricted mode.";
++        return false;
++    }
++
++    // the same address checks as transfer and transfer_token, once per asset
++    std::list<wallet_rpc::transfer_destination> cash_dest, token_dest;
++    cash_dest.push_back(wallet_rpc::transfer_destination()); cash_dest.back().address = req.address; cash_dest.back().amount = req.amount;
++    token_dest.push_back(wallet_rpc::transfer_destination()); token_dest.back().address = req.address; token_dest.back().amount = req.token_amount;
++    if (req.amount == 0 || req.token_amount == 0) {
++        er.code = WALLET_RPC_ERROR_CODE_ZERO_DESTINATION;
++        er.message = "transfer_mixed needs both a cash amount and a token amount; use transfer or transfer_token for one asset";
++        return false;
++    }
++    if (!tools::is_whole_token_amount(req.token_amount)) {
++        er.code = WALLET_RPC_ERROR_CODE_TX_NOT_POSSIBLE;
++        er.message = "WALLET_RPC_ERROR_CODE_TX_NOT_POSSIBLE: token amount not whole number";
++        return false;
++    }
++    if (!validate_transfer(cash_dest, req.payment_id, dsts, extra, true, er, false)) return false;
++    std::vector<uint8_t> extra_unused;
++    if (!validate_transfer(token_dest, "", dsts, extra_unused, true, er, true)) return false;
++
++    try {
++        uint64_t mixin;
++        if (req.ring_size != 0) mixin = m_wallet->adjust_mixin(req.ring_size - 1);
++        else mixin = m_wallet->adjust_mixin(req.mixin);
++        uint32_t priority = m_wallet->adjust_priority(req.priority);
++        std::vector<wallet::pending_tx> ptx_vector = m_wallet->create_transactions_mixed(
++                    dsts, mixin, req.unlock_time, priority, extra, req.account_index, req.subaddr_indices, m_trusted_daemon);
++        if (ptx_vector.size() != 1) {
++            er.code = WALLET_RPC_ERROR_CODE_TX_NOT_POSSIBLE;
++            er.message = "No transaction created";
++            return false;
++        }
++        return fill_response(ptx_vector, req.get_tx_key, res.tx_key, res.amount, res.fee, res.multisig_txset,
++                             req.do_not_relay, res.tx_hash, req.get_tx_hex, res.tx_blob, req.get_tx_metadata,
++                             res.tx_metadata, er, false);
++    }
++    catch (const std::exception &e) {
++        handle_rpc_exception(std::current_exception(), er, WALLET_RPC_ERROR_CODE_GENERIC_TRANSFER_ERROR);
++        return false;
++    }
++    return true;
++}
++
+ //------------------------------------------------------------------------------------------------------------------------------
+ bool wallet_rpc_server::on_transfer_token(
+     const wallet_rpc::COMMAND_RPC_TRANSFER_TOKEN::request &req,
+diff --git a/src/wallet/wallet_rpc_server_commands_defs.h b/src/wallet/wallet_rpc_server_commands_defs.h
+index f56f549..e905f63 100644
+--- a/src/wallet/wallet_rpc_server_commands_defs.h
++++ b/src/wallet/wallet_rpc_server_commands_defs.h
+@@ -486,6 +587,70 @@ namespace wallet_rpc
+     typedef epee::misc_utils::struct_init<response_t> response;
+   };
+ 
++    // One transaction that sends both cash and tokens to one address.
++    struct COMMAND_RPC_TRANSFER_MIXED
++    {
++      struct request_t
++      {
++        std::string address;
++        uint64_t amount;          // cash, atomic units
++        uint64_t token_amount;    // tokens, atomic units (whole tokens only)
++        uint32_t account_index;
++        std::set<uint32_t> subaddr_indices;
++        uint32_t priority;
++        uint64_t mixin;
++        uint64_t ring_size;
++        uint64_t unlock_time;
++        std::string payment_id;
++        bool get_tx_key;
++        bool do_not_relay;
++        bool get_tx_hex;
++        bool get_tx_metadata;
++
++        BEGIN_KV_SERIALIZE_MAP()
++          KV_SERIALIZE(address)
++          KV_SERIALIZE(amount)
++          KV_SERIALIZE(token_amount)
++          KV_SERIALIZE(account_index)
++          KV_SERIALIZE(subaddr_indices)
++          KV_SERIALIZE(priority)
++          KV_SERIALIZE_OPT(mixin, (uint64_t)0)
++          KV_SERIALIZE_OPT(ring_size, (uint64_t)0)
++          KV_SERIALIZE(unlock_time)
++          KV_SERIALIZE(payment_id)
++          KV_SERIALIZE(get_tx_key)
++          KV_SERIALIZE_OPT(do_not_relay, false)
++          KV_SERIALIZE_OPT(get_tx_hex, false)
++          KV_SERIALIZE_OPT(get_tx_metadata, false)
++        END_KV_SERIALIZE_MAP()
++      };
++      typedef epee::misc_utils::struct_init<request_t> request;
++
++      struct response_t
++      {
++        std::string tx_hash;
++        std::string tx_key;
++        std::list<std::string> amount_keys;
++        uint64_t amount;
++        uint64_t fee;
++        std::string tx_blob;
++        std::string tx_metadata;
++        std::string multisig_txset;
++
++        BEGIN_KV_SERIALIZE_MAP()
++          KV_SERIALIZE(tx_hash)
++          KV_SERIALIZE(tx_key)
++          KV_SERIALIZE(amount_keys)
++          KV_SERIALIZE(amount)
++          KV_SERIALIZE(fee)
++          KV_SERIALIZE(tx_blob)
++          KV_SERIALIZE(tx_metadata)
++          KV_SERIALIZE(multisig_txset)
++        END_KV_SERIALIZE_MAP()
++      };
++      typedef epee::misc_utils::struct_init<response_t> response;
++    };
++
+     struct COMMAND_RPC_TRANSFER_TOKEN
+     {
+       struct request_t
+--- a/src/wallet/wallet.cpp
++++ b/src/wallet/wallet.cpp
+@@ -8575,6 +8575,116 @@
+   return ptx_vector;
+ }
+ 
++// One transaction that pays BOTH Safex Cash and Safex Tokens to the same destination(s).
++// dsts holds one entry per asset (a cash entry with amount, a token entry with token_amount; tokens whole units only).
++// Inputs are picked tokens first, then cash for the cash amount plus fee, because the ring builder lays tokens before cash.
++// Always a single transaction; throws rather than splitting.
++std::vector<wallet::pending_tx> wallet::create_transactions_mixed(std::vector<cryptonote::tx_destination_entry> dsts, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority,
++    const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon)
++{
++  hw::device &hwdev = m_account.get_device();
++  boost::unique_lock<hw::device> hwdev_lock (hwdev);
++  hw::reset_mode rst(hwdev);
++
++  if(m_light_wallet) {
++    light_wallet_get_unspent_outs();
++  }
++
++  THROW_WALLET_EXCEPTION_IF(dsts.empty(), error::zero_destination);
++
++  uint64_t needed_cash = 0, needed_tokens = 0;
++  for (auto &dt : dsts)
++  {
++    THROW_WALLET_EXCEPTION_IF(!tools::is_whole_token_amount(dt.token_amount), error::wallet_internal_error, "Token amount must be a whole number.");
++    THROW_WALLET_EXCEPTION_IF(dt.token_transaction && dt.amount != 0, error::wallet_internal_error, "A token destination entry must not carry a cash amount.");
++    THROW_WALLET_EXCEPTION_IF(!dt.token_transaction && dt.token_amount != 0, error::wallet_internal_error, "A cash destination entry must not carry a token amount.");
++    needed_cash += dt.amount;
++    needed_tokens += dt.token_amount;
++    THROW_WALLET_EXCEPTION_IF(needed_cash < dt.amount, error::tx_sum_overflow, dsts, 0, m_nettype);
++    THROW_WALLET_EXCEPTION_IF(needed_tokens < dt.token_amount, error::tx_sum_overflow, dsts, 0, m_nettype);
++  }
++  THROW_WALLET_EXCEPTION_IF(needed_cash == 0 || needed_tokens == 0, error::wallet_internal_error, "A combined send needs both a cash amount and a token amount. Use transfer or transfer_token for one asset.");
++
++  const uint64_t fee_per_kb  = get_per_kb_fee();
++  const uint64_t fee_multiplier = get_fee_multiplier(priority, get_fee_algorithm());
++
++  // gather spendable outputs of this account (and the chosen subaddresses, if any)
++  std::vector<size_t> unused_tokens, unused_cash, unused_dust;
++  uint64_t unlocked_tokens = 0, unlocked_cash = 0;
++  for (size_t i = 0; i < m_transfers.size(); ++i)
++  {
++    const transfer_details& td = m_transfers[i];
++    if (td.m_spent || td.m_key_image_partial || td.m_subaddr_index.major != subaddr_account) continue;
++    if (!subaddr_indices.empty() && subaddr_indices.count(td.m_subaddr_index.minor) != 1) continue;
++    if (td.m_token_transfer && td.get_out_type() == tx_out_type::out_token)
++    {
++      if (!is_token_transfer_unlocked(td)) continue;
++      unused_tokens.push_back(i); unlocked_tokens += td.token_amount();
++    }
++    else if (!td.m_token_transfer && td.amount() > 0 && td.get_out_type() == tx_out_type::out_cash)
++    {
++      if (!is_transfer_unlocked(td)) continue;
++      unlocked_cash += td.amount();
++      if (td.is_rct() || is_valid_decomposed_amount(td.amount())) unused_cash.push_back(i); else unused_dust.push_back(i);
++    }
++  }
++  THROW_WALLET_EXCEPTION_IF(needed_tokens > unlocked_tokens, error::not_enough_unlocked_tokens, unlocked_tokens, needed_tokens);
++  THROW_WALLET_EXCEPTION_IF(needed_cash > unlocked_cash, error::not_enough_unlocked_cash, unlocked_cash, needed_cash, 0);
++  {
++    std::random_device rd; std::mt19937 g(rd());
++    std::shuffle(unused_tokens.begin(), unused_tokens.end(), g);
++    std::shuffle(unused_cash.begin(), unused_cash.end(), g);
++    std::shuffle(unused_dust.begin(), unused_dust.end(), g);
++  }
++
++  std::vector<size_t> selected;
++  uint64_t sel_tokens = 0, sel_cash = 0;
++  // tokens first. The ring builder and the input order both rely on tokens coming before cash.
++  while (sel_tokens < needed_tokens)
++  {
++    THROW_WALLET_EXCEPTION_IF(unused_tokens.empty(), error::not_enough_unlocked_tokens, unlocked_tokens, needed_tokens);
++    size_t idx = pop_best_value(unused_tokens, selected, true, tx_out_type::out_token);
++    selected.push_back(idx); sel_tokens += m_transfers[idx].token_amount();
++  }
++  auto add_cash = [&](uint64_t fee_now) {
++    std::vector<size_t> &src = unused_cash.empty() ? unused_dust : unused_cash;
++    THROW_WALLET_EXCEPTION_IF(src.empty(), error::tx_not_possible, unlocked_cash, needed_cash, fee_now);
++    size_t idx = pop_best_value(src, selected, false, tx_out_type::out_cash);
++    selected.push_back(idx); sel_cash += m_transfers[idx].amount();
++  };
++  const size_t n_dst = dsts.size() + 2; // + cash change + token change
++  auto estimate_fee = [&]() { return calculate_fee(fee_per_kb, estimate_tx_size(selected.size(), fake_outs_count, n_dst, extra.size()), fee_multiplier); };
++
++  uint64_t fee = estimate_fee();
++  std::vector<std::vector<tools::wallet::get_outs_entry>> outs;
++  cryptonote::transaction test_tx = AUTO_VAL_INIT(test_tx);
++  pending_tx test_ptx = AUTO_VAL_INIT(test_ptx);
++  hwdev.set_mode(hw::device::TRANSACTION_CREATE_FAKE);
++  bool built = false;
++  for (int attempt = 0; attempt < 12 && !built; ++attempt)
++  {
++    while (sel_cash < needed_cash + fee) { add_cash(fee); outs.clear(); fee = std::max(fee, estimate_fee()); }
++    transfer_selected<detail::split_strategy_function, cryptonote::tx_out_type::out_token>(dsts, selected, fake_outs_count, outs, unlock_time, fee, extra,
++        detail::digit_split_strategy, tx_dust_policy(::config::DEFAULT_DUST_THRESHOLD, ::config::DEFAULT_TOKEN_DUST_THRESHOLD), test_tx, test_ptx);
++    const auto blob = t_serializable_object_to_blob(test_ptx.tx);
++    const uint64_t real_fee = calculate_fee(fee_per_kb, blob, fee_multiplier);
++    LOG_PRINT_L2("Mixed tx " << get_size_string(blob) << ": fee paid " << print_money(test_ptx.fee) << ", needed " << print_money(real_fee));
++    if (real_fee <= test_ptx.fee) built = true; else fee = real_fee;
++  }
++  THROW_WALLET_EXCEPTION_IF(!built, error::tx_not_possible, unlocked_cash, needed_cash, fee);
++
++  hwdev.set_mode(hw::device::TRANSACTION_CREATE_REAL);
++  cryptonote::transaction final_tx = AUTO_VAL_INIT(final_tx);
++  pending_tx final_ptx = AUTO_VAL_INIT(final_ptx);
++  transfer_selected<detail::split_strategy_function, cryptonote::tx_out_type::out_token>(dsts, selected, fake_outs_count, outs, unlock_time, test_ptx.fee - (test_ptx.dust_added_to_fee ? test_ptx.dust : 0), extra,
++      detail::digit_split_strategy, tx_dust_policy(::config::DEFAULT_DUST_THRESHOLD, ::config::DEFAULT_TOKEN_DUST_THRESHOLD), final_tx, final_ptx);
++  LOG_PRINT_L1("Mixed transaction: " << print_money(needed_tokens) << " tokens + " << print_money(needed_cash) << " cash, fee " << print_money(final_ptx.fee) << ", " <<
++      selected.size() << " inputs");
++  std::vector<wallet::pending_tx> ptx_vector;
++  ptx_vector.push_back(final_ptx);
++  return ptx_vector;
++}
++
+ std::vector<wallet::pending_tx> wallet::create_transactions_all(uint64_t below, const cryptonote::account_public_address &address, bool is_subaddress, const size_t fake_outs_count, const uint64_t unlock_time, uint32_t priority, const std::vector<uint8_t>& extra, uint32_t subaddr_account, std::set<uint32_t> subaddr_indices, bool trusted_daemon)
+ {
+   std::vector<size_t> unused_transfers_indices;

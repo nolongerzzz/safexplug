@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safex SOLO-SYNC Wallet</title>
+<link rel="stylesheet" href="style.css">
+<script src="theme.js"></script>
+</head>
+<body>
+<div id="login" class="login">
+  <ol id="steps" class="steps" hidden>
+    <li id="st1"><b>1</b> Select file</li><li id="st2"><b>2</b> Node connection</li><li id="st3"><b>3</b> Your password</li>
+  </ol>
+
+  <section class="card pane" id="sStart">
+    <h1>Safex SOLO-SYNC Wallet</h1>
+    <p class="mute">Runs on this computer and syncs from your own node. No website, no account.</p>
+    <div id="toolsBox" class="note" hidden>
+      <div>The official wallet tools are needed once (about 40 MB, checked against Safex's published checksums). On a Mac this copies the tools you built on this computer. On Windows and Linux they download from Safex's release page.</div>
+      <button id="dlTools" class="btn primary">Download wallet tools</button>
+      <pre id="dlLog" class="mini-log" hidden></pre>
+    </div>
+    <button id="bOpen" class="btn big">Open Existing Wallet</button>
+    <button id="bCreate" class="btn big">Create New Wallet</button>
+    <button id="bSeed" class="btn big">Recover Wallet From Seed Phrase</button>
+    <button id="bSpend" class="btn big">Recover Wallet From Spend Key</button>
+    <button id="updBtn2" class="btn small primary" hidden></button>
+    <div id="createNote" class="note" hidden>A terminal window opened. Follow its prompts. Seed words and keys are only ever typed and shown there, never in this app. When it says your wallet is ready, come back and choose Open Existing Wallet.</div>
+    <div id="startErr" class="err" hidden></div>
+  </section>
+
+  <section class="card pane" id="sFile" hidden>
+    <h2>Select your wallet file</h2>
+    <p class="mute">Wallets made here are listed. Or browse for any <b>.keys</b> file.</p>
+    <div id="walletList" class="wlist"></div>
+    <button id="bBrowse" class="btn">Browse for a .keys file…</button>
+    <div id="chosen" class="chosen" hidden></div>
+    <label id="adoptRow" class="adopt" hidden><input type="checkbox" id="adoptBox" checked> Add this wallet to my list (copies its files into the wallets folder, so it shows in Switch wallet)</label>
+    <div class="row"><button class="btn back">Back</button><button id="fileNext" class="btn primary" disabled>Continue</button></div>
+  </section>
+
+  <section class="card pane" id="sNode" hidden>
+    <h2>Node connection</h2>
+    <p class="mute">Your own node is the default. Your wallet only ever talks to the node you choose here.</p>
+    <label>Node host<input id="nHost" type="text" value="127.0.0.1" spellcheck="false" autocomplete="off"></label>
+    <label>Node port<input id="nPort" type="text" value="17402" spellcheck="false" autocomplete="off"></label>
+    <div id="nodeRes" class="note" hidden></div>
+    <div class="row"><button class="btn back">Back</button><button id="nodeNext" class="btn primary">Check and continue</button></div>
+  </section>
+
+  <section class="card pane" id="sPass" hidden>
+    <h2>Enter your password</h2>
+    <p class="mute" id="passFor"></p><div id="passTag"></div>
+    <input id="pw" type="password" autocomplete="off" spellcheck="false" placeholder="Wallet password">
+    <div id="passErr" class="err" hidden></div>
+    <div class="row"><button class="btn back">Back</button><button id="unlock" class="btn primary">Open wallet</button></div>
+  </section>
+  <section class="card pane" id="sWait" hidden><div class="dots"><i></i><i></i><i></i></div><p class="mute" id="waitMsg">Opening your wallet…</p></section>
+</div>
+
+<div id="app" class="app" hidden>
+  <header class="top">
+    <button id="tHome" class="brandbox sel" title="Home" aria-label="SOLO-SYNC Wallet, Home"><span class="bsfx">SFX</span>/<span class="bsft">SFT</span></button>
+    <nav class="tabs"><button id="tMarket">Market</button><button id="tStake">Staking</button><button id="tSell">Sell</button><button id="tSwap">Swap</button><button id="tExplorer">Explorer</button><button id="tHelp">Help</button></nav>
+    <div class="status"><span id="blk" class="blk">Block —</span><span id="chip" class="chip">Connecting…</span></div>
+    <div class="acts"><button id="updBtn" class="btn small primary" hidden></button><button id="themeBtn" class="btn small" title="Colour theme: Auto follows your computer; click to force Dark or Light">◐ Auto</button><button id="switch" class="btn small">Switch wallet</button><button id="lock" class="ibtn" title="Lock" aria-label="Lock"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button></div>
+  </header>
+
+  <main id="vHome" class="view">
+    <section class="bal">
+      <div class="col"><button id="cardCash" class="coin cash sel"><span class="k">SFX · Safex Cash</span><span class="v" id="balCash">0</span><span class="s" id="subCash"></span></button><div class="btnrow"><button id="splitCash" class="btn small splitbtn">Split into coins</button><button id="sweepBtn" class="btn small splitbtn" type="button" title="Move old tiny coins into new ones at your own address, so sends stop failing with &quot;not enough outputs&quot;">Sweep dust</button></div></div>
+      <div class="col"><button id="cardTok" class="coin tok"><span class="k">SFT · Safex Token</span><span class="v" id="balTok">0</span><span class="s" id="subTok"></span><span class="s" id="subTokTotal"></span></button><button id="splitTok" class="btn small splitbtn">Split into coins</button></div>
+    </section>
+        <section class="card addr"><div class="addrhead"><span class="k">Your address</span><span id="walletTag" class="wtag" hidden></span></div><div class="addrrow"><code id="addr">—</code><div class="ibar"><button id="copy" class="ibtn" title="Copy address" aria-label="Copy address"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg></button><button id="wSeed" class="ibtn" title="Show keys, seed words and seller account keys (asks for your password)" aria-label="Show keys, seed words and seller account keys (asks for your password)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg></button><button id="wBackup" class="ibtn" title="Back up this wallet" aria-label="Back up this wallet"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10M8 10l4 4 4-4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></button><button id="wRescanFrom" class="ibtn" title="Rescan from a block" aria-label="Rescan from a block"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v4h-4"/><path d="M4 5v6"/></svg></button><button id="wRescanAll" class="ibtn" title="Hard rescan (from the very beginning)" aria-label="Hard rescan (from the very beginning)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v4h-4"/><path d="M12 8.5v4"/><circle cx="12" cy="15.6" r=".6"/></svg></button><button id="tHist" class="ibtn" title="History" aria-label="History"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></button><button id="refreshBtn" class="ibtn" title="Refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v4h-4"/></svg></button></div></div><div id="wMsg" class="msg" hidden></div></section>
+    <div class="homegrid">
+    <section class="card send">
+      <h2 id="sendTitle">Send Safex Cash (SFX)</h2>
+      <label>Receiving address<input id="toAddr" type="text" spellcheck="false" autocomplete="off" placeholder="Safex address"></label>
+      <div class="addrpick"><select id="addrPick" aria-label="Saved addresses"><option value="">Saved addresses…</option></select><button id="addrSave" class="btn small" type="button" title="Save the address above under a name">Save</button><button id="addrDel" class="btn small" type="button" title="Remove the chosen saved address" hidden>Remove</button></div>
+      <div id="addrNameRow" class="addrpick" hidden><input id="addrName" type="text" maxlength="40" placeholder="Name for this address" autocomplete="off"><button id="addrOk" class="btn small primary" type="button">Save</button><button id="addrNo" class="btn small" type="button">Cancel</button></div>
+      <label>Amount<input id="amt" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="How much to send?"></label>
+      <label id="tokRow" hidden>Also send SFT in the same transaction <span class="mute small">(optional, whole tokens)</span><input id="amtTok" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" placeholder="SFT to send along with the SFX"></label>
+      <label class="chk"><input type="checkbox" id="sendMax"> Send everything available <span class="mute small">(the network fee comes out of it; SFT sends whole tokens only)</span></label>
+      <div class="mute small">Network fee is paid in SFX and shown before you confirm.</div>
+      <label class="ringrow">Ring size <input id="ring" type="number" min="3" max="15" step="1" value="7"></label>
+      <div class="mute small">7 is the standard. Lower is a little cheaper but less private, and the network may refuse it.</div>
+      <button id="review" class="btn primary big">Review send</button>
+      <div id="sendMsg" class="msg" hidden></div>
+    </section>
+    <section class="card recent">
+      <h2>Recent activity</h2>
+      <div class="rline"><span class="k">Last received</span><span id="lastIn" class="rv">—</span></div>
+      <div class="rline"><span class="k">Last sent</span><span id="lastOut" class="rv">—</span></div>
+      <h3>Latest 5 transactions</h3>
+      <ul id="recentList" class="rlist"></ul>
+      <div id="recentEmpty" class="mute small">No transactions yet.</div>
+      <button id="recentAll" class="btn small">See all in History</button>
+    </section>
+    </div>
+  </main>
+
+  <main id="vMarket" class="view" hidden>
+    <section class="card" id="mkSwaps" hidden>
+      <h2 class="swsell">Live swap offers</h2>
+      <p class="mute small">SFT for SFX, wallet to wallet. These are not marketplace listings: they are on the swap board, and you buy them in the Swap tab.</p>
+      <p class="msg bad" id="mkSwapNote" hidden></p>
+      <div id="mkSwapList"></div>
+    </section>
+    <section class="card">
+      <h2>Marketplace listings</h2>
+      <p class="mute small">Read-only records from the old Safex marketplace, read from your own node. Many are years old: a listing marked "active" on the chain does not mean the seller is still there. Prices are in SFX when listed; pegged listings show their minimum. Pictures are not loaded.</p>
+      <div class="row mkrow"><input id="mkSearch" type="text" spellcheck="false" autocomplete="off" placeholder="Search title or seller"><select id="mkSort"><option value="new">Newest</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select><label class="chk"><input id="mkActive" type="checkbox" checked> Active only</label><label class="chk"><input id="mkGear" type="checkbox"> Mining gear</label><label class="chk"><input id="mkNew" type="checkbox"> Show confirming</label><button id="mkSellers" class="btn small">Sellers</button><button id="mkLoad" class="btn small">Load listings</button></div>
+      <div id="mkSellerBox" class="mklist" hidden></div>
+      <div id="mkMsg" class="msg" hidden></div>
+      <div id="mkCount" class="mute small"></div>
+      <div id="mkList" class="mklist"></div>
+      <button id="mkMore" class="btn small" hidden>Show more</button>
+    </section>
+    <section id="mkDetail" class="card" hidden>
+      <button id="mkBack" class="btn small">Back to list</button>
+      <h2 id="dTitle"></h2>
+      <dl id="dBody"></dl>
+      <div id="dText" class="mkdesc"></div>
+      <div id="buyBox" class="buybox" hidden>
+        <h3>Buy this listing</h3>
+        <label>Quantity<input id="buyQty" type="number" min="1" step="1" value="1"></label>
+        <dl id="buyMath"></dl>
+        <button id="buyBtn" class="btn primary big">Buy</button>
+        <div class="mute small">The seller has to deliver what you bought. The chain only moves the money, and it does not tell the seller who you are.</div>
+      </div>
+      <div id="dImgs" class="mute small"></div>
+    </section>
+  </main>
+
+  <main id="vStake" class="view" hidden>
+    <section class="card">
+      <h2>Staking</h2>
+      <div class="sthero"><span class="k">Total SFT · held + staked</span><span class="big" id="stTotal">—</span><span class="sub" id="stTotalSub"></span></div>
+      <p class="mute small">Staked tokens earn SFX paid from marketplace fees, so the reward depends on market activity. Staking and unstaking use the official wallet tool: you see the exact fee first, and nothing is sent until you confirm.</p>
+      <div id="stMsg" class="msg" hidden></div>
+      <div class="stgrid">
+        <div class="stbox"><h3>Status</h3><dl id="stStatus"></dl></div>
+        <div class="stbox"><h3>Stake tokens</h3>
+          <p class="mute small">Available to stake: <b id="stAvail">—</b> SFT</p>
+          <label>How much to stake?<input id="stAmt" type="text" inputmode="decimal" placeholder="25000" autocomplete="off"></label>
+          <p class="mute small">Minimum 25,000 SFT. Tokens stay staked at least 8000 blocks (about 11 days) before they can earn out.</p>
+          <button id="stBtn" class="btn primary">Stake</button></div>
+        <div class="stbox"><h3>Unstake tokens</h3>
+          <p class="mute small">Staked: <b id="unAvail">—</b> SFT</p>
+          <label>How much to unstake?<input id="unAmt" type="text" inputmode="decimal" placeholder="25000" autocomplete="off"></label>
+          <label>Staked at block (optional)<input id="unHeight" type="text" inputmode="numeric" placeholder="leave empty unless you staked more than once" autocomplete="off"></label>
+          <button id="unBtn" class="btn primary">Unstake</button></div>
+      </div>
+      <button id="stLoad" class="btn small">Refresh</button>
+      <h3>Network rewards</h3>
+      <dl id="stBody"></dl>
+      <h3>The rules, as published in the Safex source</h3>
+      <ul class="small mute"><li>Minimum stake: 25,000 SFT.</li><li>Rewards are calculated for each 1000-block interval (about a day and a half).</li><li>Tokens must stay staked at least 8000 blocks (about 11 days) to collect.</li><li>A stake lasts 500,000 blocks (about 2 years) before it must be renewed.</li><li>Staking and unstaking cost a small SFX fee.</li></ul>
+      <p class="mute small">These come from the safexcore source code, not from the wallet tool itself. The tool has the final say and will refuse anything it does not allow.</p>
+    </section>
+  </main>
+
+  <main id="vSell" class="view" hidden>
+    <section class="card sellcard">
+      <h2>My listings</h2>
+      <p class="mute small">Closing a listing marks it inactive on the chain, so nobody can buy it. The chain keeps the record, but the Market hides inactive listings by default. Each change is a small transaction with a network fee.</p>
+      <label>Seller account<input id="mlUser" type="text" list="mlUsers" spellcheck="false" autocomplete="off" placeholder="pick or type the account name you listed under"></label><datalist id="mlUsers"></datalist>
+      <div class="row"><button id="mlShow" class="btn">Show my listings</button></div>
+      <details id="mlFind"><summary>Don't see your account? Look it up in this wallet</summary>
+        <p class="mute small">Reads the seller accounts this wallet holds. It pauses the wallet for a few seconds and needs your password.</p>
+        <label>Wallet password<input id="mlPw" type="password" autocomplete="off"></label>
+        <div class="row"><button id="mlFindGo" class="btn">Find my seller accounts</button></div>
+        <p class="mute small">Have the account&rsquo;s secret key from a backup or another wallet? Bring it into this wallet instead (uses the password above):</p>
+        <label>Account name<input id="mlImUser" type="text" spellcheck="false" autocomplete="off"></label>
+        <label>Account secret key (64 characters)<input id="mlImKey" type="password" spellcheck="false" autocomplete="off"></label>
+        <div class="row"><button id="mlImGo" class="btn">Import seller account</button></div>
+      </details>
+      <div id="mlMsg" class="msg" hidden></div><div id="mlList"></div>
+    </section>
+    <section class="card sellcard">
+      <h2>1. Seller account</h2>
+      <p class="mute small">You need one seller account in this wallet before you can list anything. Creating it locks 1,000 SFT. Your balance does not change, but those tokens cannot be spent while locked, and how long that lasts is not confirmed. Do this once.</p>
+      <label>Account name<input id="acUser" type="text" spellcheck="false" autocomplete="off" placeholder="lowercase letters, digits, _ and -"></label>
+      <label>Account data<input id="acData" type="text" spellcheck="false" autocomplete="off" placeholder="a short label, no spaces"></label>
+      <button id="acBtn" class="btn primary big">Create seller account</button>
+    </section>
+    <section class="card sellcard">
+      <h2>2. New listing</h2>
+      <p class="mute small">Type what you want to receive for each unit. The wallet adds the network's 5% and shows the price to list. A listing is only a price: you send what the buyer paid for yourself, and the buyer has to tell you where. The chain does not.</p>
+      <label>Seller account<input id="ofUser" type="text" spellcheck="false" autocomplete="off" placeholder="the account name from step 1"></label>
+      <label>Listing name<input id="ofName" type="text" spellcheck="false" autocomplete="off" placeholder="letters, digits, . , _ - only"></label>
+      <label>You receive per unit (SFX)<input id="ofNet" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="for example 1"></label>
+      <label>Quantity for sale<input id="ofQty" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" placeholder="how many units"></label>
+      <label>Description<input id="ofDesc" type="text" spellcheck="false" autocomplete="off" placeholder="letters, digits, . , _ - only"></label>
+      <dl id="ofMath"></dl>
+      <button id="ofBtn" class="btn primary big">Create listing</button>
+    </section>
+  </main>
+
+
+  <main id="vSwap" class="view" hidden>
+    <section class="card" id="swNo" hidden>
+      <h2 id="swNoTitle">Swap needs a newer wallet tool</h2>
+      <p class="mute small" id="swNoText">Swapping SFT for SFX straight between two wallets needs the swap-capable wallet tool. The one installed here does not have it. Install the update that came with this version, then lock and unlock the wallet.</p>
+    </section>
+    <div id="swMain">
+      <aside class="swdock" id="swMineCard" hidden>
+        <h3>Your swaps</h3>
+        <div class="small mute" id="swStripText"></div>
+        <div id="swMineList"></div>
+        <button id="swStripClear" class="btn small">Clear waiting swaps</button>
+      </aside>
+      <div class="swtwo">
+        <section class="card sellcard">
+          <h2 class="swsell">Sell SFT</h2>
+          <p class="mute small">Put an offer on the board. A buyer clicks it, you approve, done.</p>
+          <label>SFT to sell (whole tokens)<input id="swQty" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" placeholder="for example 100"></label>
+          <label>Total SFX you want<input id="swPrice" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="for example 25"></label>
+          <button id="swPostAsk" class="btn primary big">Post my offer</button>
+        </section>
+        <section class="card sellcard">
+          <h2 class="swbuy">Buy SFT</h2>
+          <p class="mute small">Ask for what you want. A seller clicks your request, you confirm, done.</p>
+          <label>SFT to buy (whole tokens)<input id="swBQty" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" placeholder="for example 100"></label>
+          <label>Total SFX you will pay<input id="swBPrice" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="for example 25"></label>
+          <button id="swPostBid" class="btn primary big">Post my request</button>
+        </section>
+      </div>
+      <div id="swMsg" class="msg" hidden></div>
+      <section class="card">
+        <div class="row"><h2>The board</h2><button id="swRefresh" class="btn small">Refresh</button></div>
+        <p class="mute small">What other wallets have posted. Click one to start; you will see every amount and fee before anything is sent.</p>
+        <p class="msg bad" id="swBoardNote" hidden></p>
+        <h3 class="swsell">For sale (click to buy)</h3><div id="swAsks"></div>
+        <h3 class="swbuy">Wanted (click to sell)</h3><div id="swBids"></div>
+      </section>
+      
+      <details class="card" id="swRelayBox"><summary>Relay settings</summary>
+        <p class="mute small">The relay is the board the two wallets use to talk. This wallet runs one for you. To swap with another computer, one of you shares a relay and the other types its address.</p>
+        <label>Relay address<input id="swRelayUrl" type="text" spellcheck="false" autocomplete="off" placeholder="leave empty to use this computer's own relay"></label>
+        <label class="inl"><input id="swRelayShare" type="checkbox"> Let other computers use the relay on this one (for example over Tailscale)</label>
+        <div class="row"><button id="swRelaySave" class="btn">Save relay settings</button></div>
+        <p class="small" id="swRelayInfo"></p>
+      </details>
+    </div>
+  </main>
+
+  <main id="vHelp" class="view" hidden>
+    <section class="card"><h2>Help</h2>
+      <label>Search<input id="helpQ" type="text" placeholder="for example: fee, relay, rescan" spellcheck="false" autocomplete="off"></label>
+      <div id="helpList"></div><p id="helpNone" class="mute small" hidden>Nothing matches that.</p>
+    </section>
+    <details class="card" id="helpCli"><summary>Wallet tool options (captured from the installed program)</summary>
+      <p class="mute small" id="helpCliNote"></p>
+      <p class="mute small" id="helpMixed"></p>
+      <button id="refreshTools" class="btn small" type="button" title="Mac: copies the wallet tools you built on this computer again. Other systems: downloads them again. The wallet locks first.">Update wallet tools (re-copy / re-download)</button>
+      <div id="refreshMsg" class="msg" hidden></div>
+      <pre id="helpCliText" class="mini-log"></pre>
+    </details>
+  </main>
+  
+  <main id="vExplorer" class="view" hidden>
+    <section class="card">
+      <div class="row exrow"><label class="grow">Find a transaction or block<input id="exQ" type="text" spellcheck="false" autocomplete="off" placeholder="Transaction hash, block number or block hash"></label><button id="exGo" class="btn primary">Search</button><button id="exLatest" class="btn" hidden>Back to latest</button></div>
+      <div class="mute small">Read from your own node. Amounts and addresses are private on this chain, so this shows structure, fees and confirmations only.</div>
+      <div id="exErr" class="msg bad" hidden></div>
+    </section>
+    <section class="card" id="exPoolBox" hidden><h3 id="exPoolK">Waiting in the pool</h3><div id="exPool" class="txlist"></div></section>
+    <section class="card" id="exList"><div class="tbl"><table><thead><tr><th>Height</th><th>Age</th><th>Hash</th><th>Txs</th><th>Size</th><th>Reward</th></tr></thead><tbody id="exBody"></tbody></table></div><button id="exMore" class="btn small">Load older blocks</button></section>
+    <section class="card" id="exDetail" hidden>
+      <div class="row"><h2 id="exTitle"></h2><button id="exBack" class="btn small">Back to list</button></div>
+      <div class="tbl"><table class="kv"><tbody id="exFacts"></tbody></table></div>
+      <h3 id="exTxsK">Transactions in this block</h3><div id="exTxs" class="txlist"></div>
+      <div id="exTxBox" hidden><h3 id="exTxK">Transaction</h3><div class="tbl"><table class="kv"><tbody id="exTxFacts"></tbody></table></div><button id="exTxBlock" class="btn small" hidden>Open its block</button></div>
+    </section>
+  </main>
+
+  <main id="vHist" class="view" hidden>
+    <section class="card"><div class="tbl"><table><thead><tr><th>Date/Time</th><th>TXID</th><th>In/Out</th><th>Status</th><th>Asset</th><th>Amount</th><th>Fee (SFX)</th><th>Height</th><th>Confs</th></tr></thead><tbody id="hBody"></tbody></table></div><div id="hEmpty" class="mute pad">No transactions yet.</div></section>
+  </main>
+</div>
+
+<div id="splitDlg" class="modal" hidden><div class="card dlg">
+  <h2 id="sdTitle">Split into coins</h2>
+  <p class="mute small">A send spends whole coins and locks the leftover for about 20 minutes. Several smaller coins keep most of your balance spendable after a send. This pays yourself in one transaction, so you pay one fee. You will see the plan and the fee before anything is sent.</p>
+  <label>Amount to split <span class="mute small">(optional: leave empty to split everything available)</span><input id="sAmt" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="For example 100"></label>
+  <label>Number of coins<input id="parts" type="number" min="2" max="20" step="1" value="8"></label>
+  <label>Ring size<input id="sRing" type="number" min="3" max="15" step="1" value="7"></label>
+  <div id="splitMsg" class="msg" hidden></div>
+  <div class="row"><button id="sdCancel" class="btn">Cancel</button><button id="splitReview" class="btn primary">Review split</button></div>
+</div></div>
+<div id="seedDlg" class="modal" hidden><div class="card dlg wide">
+  <h2>Keys &amp; seeds</h2>
+  <div id="seedAsk"><label>Wallet password<input id="seedPw" type="password" autocomplete="off"></label><div id="seedMsg" class="msg" hidden></div>
+    <div class="row"><button id="seedCancel" class="btn">Cancel</button><button id="seedGo" class="btn primary">Show</button></div></div>
+  <div id="seedShow" hidden>
+    <div class="keyrow"><div class="kl">Public address <i class="tip" title="Your address. Safe to share: it is where people send you coins.">i</i></div><div class="kv2"><code id="kAddr"></code><button class="ibtn kcopy" data-src="kAddr" title="Copy">&#10064;</button></div></div>
+    <div class="keyrow"><div class="kl">Private spend key <i class="tip" title="Gives full control of the wallet. Anyone who has it can spend your coins. Never share it.">i</i></div><div class="kv2"><code id="kSpend"></code><button class="ibtn kcopy" data-src="kSpend" title="Copy (cleared from the clipboard after 30 seconds)">&#10064;</button></div></div>
+    <div class="keyrow"><div class="kl">Private view key <i class="tip" title="Lets someone see this wallet's balance and history, but not spend. Share only with someone you trust.">i</i></div><div class="kv2"><code id="kView"></code><button class="ibtn kcopy" data-src="kView" title="Copy (cleared from the clipboard after 30 seconds)">&#10064;</button></div></div>
+    <div class="keyrow"><div class="kl">Seed phrase <i class="tip" title="25 words that rebuild this wallet and its spend key. Write them on paper, in order.">i</i> <button class="ibtn kcopy" data-src="seedWords" title="Copy (cleared from the clipboard after 30 seconds)">&#10064;</button></div><div id="seedWords" class="seedbox"></div></div>
+    <div id="kSeller" hidden><div class="kl">Seller account keys <i class="tip" title="Each seller account has its own key pair. They are NOT part of the 25 seed words, so back them up too: they live in the wallet's .safex_account_keys file.">i</i></div><div id="kSellerNote" class="mute small"></div><div id="kSellerList"></div></div>
+    <p class="mute small">Anyone with the spend key or the seed phrase can take your coins. Everything here hides again by itself after one minute.</p><button id="seedHide" class="btn primary">Hide and close</button></div>
+</div></div>
+<div id="swModal" class="modal swmodal" hidden><div class="card dlg swdlg">
+  <div class="swtrade"><div><span class="mute small">You give</span><b id="swmGive"></b></div><div class="swarrow">&rarr;</div><div><span class="mute small">You get</span><b id="swmGet"></b></div></div>
+  <div class="swmach" id="swMach" data-scene="wait">
+    <svg viewBox="0 0 440 150" role="img" aria-label="Swap machine">
+      <rect x="4" y="4" width="432" height="142" rx="16" fill="#23424d"/>
+      <rect x="16" y="14" width="292" height="94" rx="10" fill="#e9f6f4"/>
+      <rect x="16" y="98" width="292" height="10" fill="#bfd9d5"/>
+      <g class="rb"><line x1="160" y1="30" x2="160" y2="38" stroke="#23424d" stroke-width="3"/><circle cx="160" cy="28" r="4" fill="#e8662a"/>
+        <rect x="140" y="38" width="40" height="26" rx="8" fill="#5b8a99"/><circle cx="151" cy="50" r="4" fill="#fff"/><circle cx="169" cy="50" r="4" fill="#fff"/><circle class="eye" cx="151" cy="50" r="2" fill="#23424d"/><circle class="eye" cx="169" cy="50" r="2" fill="#23424d"/>
+        <rect x="144" y="66" width="32" height="32" rx="7" fill="#78a6b4"/><rect x="152" y="74" width="16" height="8" rx="2" fill="#23424d"/>
+        <line class="arm armL" x1="144" y1="76" x2="126" y2="88" stroke="#5b8a99" stroke-width="6" stroke-linecap="round"/><line class="arm armR" x1="176" y1="76" x2="194" y2="88" stroke="#5b8a99" stroke-width="6" stroke-linecap="round"/></g>
+      <g class="lever"><rect x="322" y="18" width="10" height="46" rx="5" fill="#8fb1b9"/><line class="lv" x1="327" y1="24" x2="327" y2="56" stroke="#e8662a" stroke-width="6" stroke-linecap="round"/><circle class="lh" cx="327" cy="22" r="9" fill="#e8662a"/></g>
+      <rect x="346" y="18" width="78" height="118" rx="10" fill="#1b343d"/><text x="385" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#9fc3cc">YOUR WALLET</text>
+      <rect x="360" y="42" width="50" height="8" rx="4" fill="#0e1f25"/>
+      <rect x="360" y="86" width="50" height="40" rx="8" fill="#8a5a2b"/><rect x="360" y="86" width="50" height="12" rx="6" fill="#a8723a"/><text class="wchk" x="385" y="118" text-anchor="middle" font-size="22" fill="#6ee7b7">&#10003;</text>
+      <g class="coin cA"><circle cx="64" cy="86" r="16" fill="#1fa58e" stroke="#0f7f63" stroke-width="3"/><text x="64" y="90" text-anchor="middle" font-size="10" font-weight="800" fill="#fff" id="swmCoinA">SFX</text></g>
+      <g class="coin cB" id="swmCoinB"><circle cx="256" cy="86" r="16" fill="#f0a030" stroke="#b4700f" stroke-width="3"/><text x="256" y="90" text-anchor="middle" font-size="10" font-weight="800" fill="#fff" id="swmCoinBt">SFT</text></g>
+      <g class="bub"><rect x="196" y="16" width="104" height="26" rx="10" fill="#fff" stroke="#23424d" stroke-width="2"/><path d="M204 42 l-6 10 l16 -10z" fill="#fff" stroke="#23424d" stroke-width="2" stroke-linejoin="round"/><rect x="200" y="40" width="14" height="3" fill="#fff"/><text x="248" y="33" text-anchor="middle" font-size="11" font-weight="800" fill="#23424d">Are these good?</text></g>
+    </svg>
+    <div class="swcap" id="swmCap"></div>
+  </div>
+  <div class="swfees" id="swmFees" hidden></div>
+  <div class="swwho" id="swmWho"></div>
+  <button id="swmGo" class="btn primary big" hidden></button>
+  <button id="swmNext" class="btn primary big" hidden></button>
+  <div id="swmErr" class="msg bad" hidden></div>
+  <ol class="swsteps" id="swmSteps"></ol>
+  <p class="small mute" id="swmDetail"></p>
+  <div class="row"><button id="swmCancel" class="btn">Cancel swap</button><button id="swmHide" class="btn">Close</button></div>
+</div></div>
+<div id="busyDlg" class="modal" hidden><div class="card dlg"><div class="dots"><i></i><i></i><i></i></div><p id="busyMsg" class="mute"></p><div id="busyBar" class="pbar" hidden><i id="busyFill"></i></div><p id="busyProg" class="mute" hidden></p><p class="mute small">Your wallet is paused while this runs. Leave the app open.</p></div></div>
+<div id="rescanDlg" class="modal" hidden><div class="card dlg">
+  <h2 id="rsTitle">Rescan</h2><p id="rsText" class="mute small"></p>
+  <label id="rsFromBox">Start at block<input id="rsFrom" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" placeholder="block number"></label>
+  <label>Wallet password<input id="rsPw" type="password" autocomplete="off"></label><div id="rsMsg" class="msg" hidden></div>
+  <div class="row"><button id="rsCancel" class="btn">Cancel</button><button id="rsGo" class="btn primary">Start rescan</button></div>
+</div></div>
+<div id="actDlg" class="modal" hidden><div class="card dlg">
+  <h2 id="actTitle"></h2>
+  <dl id="actRows"></dl>
+  <label id="actPwBox">Wallet password<input id="actPw" type="password" autocomplete="off"></label>
+  <p id="actNote" class="mute small"></p>
+  <div id="actMsg" class="msg" hidden></div>
+  <div class="row"><button id="actCancel" class="btn">Cancel</button><button id="actGo" class="btn primary">Get price</button></div>
+</div></div>
+<div id="modal" class="modal" hidden><div class="card dlg">
+  <h2 id="mTitle">Confirm send</h2>
+  <dl><dt>Amount</dt><dd id="mAmt"></dd><dt id="mToK">To</dt><dd id="mTo" class="mono"></dd><dt>Network fee</dt><dd id="mFee"></dd></dl>
+  <p id="mWarn" class="mute small">Check the address character by character. A sent transaction cannot be undone.</p>
+  <div id="mResult" class="sentnote" hidden><b id="mResultTitle"></b><code id="mResultTx" class="sentcode"></code><div class="row"><button id="mCopy" class="btn small" type="button">Copy transaction ID</button></div></div>
+  <div class="row"><button id="mCancel" class="btn">Cancel</button><button id="mSend" class="btn primary">Send now</button></div>
+</div></div>
+<script src="app.js"></script>
+<div id="verFoot" class="verfoot"></div>
+</body>
+</html>
