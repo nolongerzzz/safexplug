@@ -8,7 +8,7 @@ const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
 
-const ALLOWED = ['package.json', 'README.md', 'LICENSE', 'src/', 'test/', 'tools/', 'assets/'];
+const ALLOWED = ['package.json', 'README.md', 'install.sh', 'docs/', 'LICENSE', 'src/', 'test/', 'tools/', 'assets/'];
 const verParts = (v) => String(v).split('.').map((x) => parseInt(x, 10) || 0);
 function cmp(a, b) { const x = verParts(a), y = verParts(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); } return 0; }
 

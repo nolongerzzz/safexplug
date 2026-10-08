@@ -1,8 +1,8 @@
 {
   "name": "safex-community-miner",
   "productName": "Safex Community Miner",
-  "version": "3.3.23",
-  "description": "Safex Community Miner",
+  "version": "3.4.0",
+  "description": "SAFEX SOLO-SYNC Node+Mine: run a Safex node and mine against it",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -11,8 +11,7 @@
   },
   "keywords": [],
   "author": {
-    "name": "Safex community",
-    "email": "noreply@example.invalid"
+    "name": "nolongerzzz"
   },
   "license": "MIT",
   "devDependencies": {
@@ -44,7 +43,7 @@
       ],
       "icon": "src/public/images/icon.png",
       "category": "Utility",
-      "maintainer": "Safex community <noreply@example.invalid>",
+      "maintainer": "nolongerzzz <nolongerzzz@users.noreply.github.com>",
       "desktop": {
         "Name": "Safex SOLO-SYNC Node+Mine",
         "Comment": "Safex Cash mining and node, with your own wallet one click away"
@@ -60,6 +59,5 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
-  },
-  "homepage": "https://github.com/safex/team-1-click-miner"
+  }
 }
