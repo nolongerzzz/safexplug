@@ -17,33 +17,41 @@ Mining Safex has had a rocky history. Earlier miners, SFXOS among them, ran into
 
 You need a few hundred MB of free disk space for the app, plus more later if you run your own node (the chain keeps growing).
 
-### Linux (Ubuntu, Debian, Mint)
+### Step 1: get the app (every system)
 
-1. Download and unpack the app folder anywhere in your home folder.
-2. Open a terminal in that folder and run:
+1. Open this link in your browser. It downloads a zip file:
+   https://github.com/nolongerzzz/safexplug/archive/refs/heads/solo-sync-node-mine.zip
+2. Open your Downloads folder and unzip it (double-click on Mac and Windows, right-click and Extract on Linux). You get a folder named `safexplug-solo-sync-node-mine`.
+3. Move that folder to your home folder (optional but tidy). This is the "app folder" below. Keep it there, because the app runs from it.
+
+### Step 2: install
+
+#### Linux (Ubuntu, Debian, Mint)
+
+1. Open the app folder, right-click an empty spot and choose **Open in Terminal**. (Or open a terminal and type `cd ~/safexplug-solo-sync-node-mine`.)
+2. Run:
 
    ```sh
    bash install.sh
    ```
 
-   It installs Node.js if needed, sets the app up, and offers a menu entry that starts the miner at full CPU speed. Say yes.
-3. Open **SAFEX SOLO-SYNC Node+Mine (full speed)** from your menu, or run `npm start` in the folder.
+   It installs Node.js if needed (it may ask for your password), sets the app up, and offers a menu entry that starts the miner at full CPU speed. Say yes.
+3. Open **SAFEX SOLO-SYNC Node+Mine (full speed)** from your menu, or run `npm start` in the app folder.
 
-### Mac
+#### Mac
 
-1. Download and unpack the app folder into your home folder.
-2. Open Terminal in that folder and run `bash install.sh`. If Node.js is missing it will tell you to install it from https://nodejs.org (the LTS button), or it installs it for you when Homebrew is present.
+1. Open **Terminal** (Spotlight, then type Terminal) and type `cd ~/safexplug-solo-sync-node-mine`, adjusting the path if you put the folder elsewhere.
+2. Run `bash install.sh`. If Node.js is missing it will tell you to install it from https://nodejs.org (the LTS button), or it installs it for you when Homebrew is present. Run `bash install.sh` again after that.
 3. Start the app with `npm start`.
 
 If macOS says the miner is from an "unidentified developer", run `xattr -dr com.apple.quarantine .` once in the app folder. The install script already does this.
 
 A Mac mines against a node running elsewhere (see Several rigs). The Node tab needs Docker on Linux.
 
-### Windows
+#### Windows
 
-1. Download and unpack the app folder.
-2. Install Node.js from https://nodejs.org (the LTS button).
-3. Double-click `tools\start-windows.cmd`. It asks for administrator rights once (the miner needs them for its speed boost) and installs the rest on the first run.
+1. Install Node.js from https://nodejs.org (the LTS button) and finish its installer.
+2. Open the app folder and double-click `tools\start-windows.cmd`. It asks for administrator rights once (the miner needs them for its speed boost) and installs the rest on the first run.
 
 Antivirus programs often flag mining engines. If yours removes the engine, restore it and add an exception for the app folder.
 
