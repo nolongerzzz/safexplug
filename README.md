@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.17
+
+- **On a Mac the miner no longer reads Downloads by itself.** The Update button shows "Check for update" on a Mac and only looks in Downloads when you press it, so switching between apps no longer raises a macOS permission popup. Linux and Windows still check on their own.
+
 ## What's new in 3.3.16
 
 - **No more repeating Mac permission popups.** The Update button looked in Downloads every minute, and on a Mac that makes macOS ask for permission each time. It now checks every 10 minutes (and when you click into the window), and if macOS says no it stops asking.

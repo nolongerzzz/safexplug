@@ -593,18 +593,19 @@
   }
 
   // ---- Update button: appears when a newer safex-miner-<ver>-update.tar.xz is in Downloads --------
-  { const b = $('updBtn'); let armTimer = null, info = null;
+  { const b = $('updBtn'); let armTimer = null, info = null; const MAC = /Mac/.test(navigator.platform);   // on a Mac, reading Downloads asks permission, so it is only done when the button is pressed
     const label = () => { b.className = 'upd'; b.disabled = false; b.textContent = `Update to ${info.version}`; b.title = `Installs ${info.version} from your Downloads folder, then restarts the app (mining stops for a moment).`; };
-    async function check() { if (b.disabled) return; try { info = await window.safex.updateCheck(); } catch (_) { info = null; } if (!info) { b.hidden = true; return; } b.hidden = false; if (!armTimer && !b.classList.contains('err')) label(); }
+    const macIdle = (note) => { b.className = 'upd'; b.hidden = false; b.textContent = note || 'Check for update'; b.title = 'Looks in your Downloads folder for a newer update file (macOS asks permission the first time).'; };
+    async function check(manual) { if (b.disabled) return; try { info = await window.safex.updateCheck(); } catch (_) { info = null; } if (!info) { if (MAC) { macIdle(manual === true ? 'No update in Downloads' : null); if (manual === true) setTimeout(() => { if (!info && !b.disabled) macIdle(); }, 4000); } else b.hidden = true; return; } b.hidden = false; if (!armTimer && !b.classList.contains('err')) label(); }
     b.onclick = async () => {
-      if (!info) return;
+      if (!info) { if (MAC) check(true); return; }
       if (!armTimer) { b.className = 'upd arm'; b.textContent = 'Click again to install and restart'; armTimer = setTimeout(() => { armTimer = null; label(); }, 6000); return; }
       clearTimeout(armTimer); armTimer = null; b.disabled = true; b.className = 'upd'; b.textContent = 'Updating…';
       const r = await window.safex.updateApply();
       if (r && r.ok) b.textContent = `Installed ${r.version}, restarting…`;
       else { b.disabled = false; b.className = 'upd err'; b.textContent = 'Update failed'; b.title = (r && r.error) || 'Unknown error'; setTimeout(() => { b.className = 'upd'; check(); }, 12000); }
     };
-    check(); setInterval(check, 600000); window.addEventListener('focus', check); }
+    if (MAC) macIdle(); else { check(); setInterval(check, 600000); window.addEventListener('focus', check); } }
 
   // ---- Rigs-page hashrate chart (one line per miner + total) ---------------
   const hc = { range: '24h', data: null, table: false, hover: -1 };
