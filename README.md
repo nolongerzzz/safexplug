@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.16
+
+- **No more repeating Mac permission popups.** The Update button looked in Downloads every minute, and on a Mac that makes macOS ask for permission each time. It now checks every 10 minutes (and when you click into the window), and if macOS says no it stops asking.
+
 ## What's new in 3.3.15
 
 - **Renamed SAFEX SOLO-SYNC Node+Mine** (was HomeBase): window title, footer, menu entry, header logo and app icon. Re-run `bash tools/install-root-launcher.sh` to update the full-speed menu entry name.

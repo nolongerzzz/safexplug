@@ -20,12 +20,16 @@ function homeFromUserData(userData) {
 }
 function downloadDirs(userData) { return [...new Set([path.join(homeFromUserData(userData), 'Downloads'), path.join(os.homedir(), 'Downloads')])]; }
 
+const denied = new Set();
+
 // Newest package in the given folders that is newer than `current`; null if none.
 function findUpdate({ prefix, current, dirs }) {
   const re = new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(\\d+\\.\\d+\\.\\d+)-update\\.tar\\.xz$');
   let best = null;
   for (const dir of dirs) {
-    let names = []; try { names = fs.readdirSync(dir); } catch (_) { continue; }
+    // macOS asks the user before an app may read Downloads. A "no" is remembered here so the folder is not tried (and asked about) again.
+    if (denied.has(dir)) continue;
+    let names = []; try { names = fs.readdirSync(dir); } catch (e) { if (e && (e.code === 'EPERM' || e.code === 'EACCES')) denied.add(dir); continue; }
     for (const n of names) {
       const m = re.exec(n); if (!m || cmp(m[1], current) <= 0) continue;
       let st; try { st = fs.statSync(path.join(dir, n)); } catch (_) { continue; }

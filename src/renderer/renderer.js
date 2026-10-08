@@ -604,7 +604,7 @@
       if (r && r.ok) b.textContent = `Installed ${r.version}, restarting…`;
       else { b.disabled = false; b.className = 'upd err'; b.textContent = 'Update failed'; b.title = (r && r.error) || 'Unknown error'; setTimeout(() => { b.className = 'upd'; check(); }, 12000); }
     };
-    check(); setInterval(check, 60000); window.addEventListener('focus', check); }
+    check(); setInterval(check, 600000); window.addEventListener('focus', check); }
 
   // ---- Rigs-page hashrate chart (one line per miner + total) ---------------
   const hc = { range: '24h', data: null, table: false, hover: -1 };
