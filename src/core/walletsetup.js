@@ -62,7 +62,16 @@ const MAC_SOURCES = (home = require('os').homedir()) => [process.env.SAFEX_MAC_T
   path.join(home, 'Library', 'Application Support', 'safex-wallet', 'tools'),
   path.join(home, 'safexcore-build', 'build', 'b171', 'bin'), path.join(home, 'safexcore-build', 'build', 'release', 'bin'), path.join(home, 'safexcore-build', 'build', 'bin')].filter(Boolean);
 const isFile = (f) => { try { return fs.statSync(f).isFile(); } catch (_) { return false; } };
-const starts = (f) => { try { const r = spawnSync(f, ['--version'], { timeout: 20000, encoding: 'utf8' }); return r.status === 0 && /\d/.test(String(r.stdout) + String(r.stderr)); } catch (_) { return false; } };
+// A tool "starts" if it runs and prints something. Its exit code is not trusted (some builds exit non-zero for --version);
+// what counts as broken is: could not launch, killed by a signal, timed out, or the loader complaining about a missing library.
+const starts = (f) => {
+  try {
+    const r = spawnSync(f, ['--version'], { timeout: 20000, encoding: 'utf8' });
+    if (r.error || r.signal) return false;
+    const out = String(r.stdout || '') + String(r.stderr || '');
+    return out.trim().length > 0 && !/dyld|Library not loaded|image not found|cannot be opened|not permitted/i.test(out);
+  } catch (_) { return false; }
+};
 function installMacTools(dir, log, sources = MAC_SOURCES()) {
   const p = paths(dir); fs.mkdirSync(p.tools, { recursive: true });
   let bad = null;

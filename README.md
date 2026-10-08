@@ -2,6 +2,10 @@
 
 One-click Safex (SFX) mining for Windows, Mac and Linux. MIT licensed. Uses the Safex xmrig engine (6.26.0 on Linux, `rx/sfx`).
 
+## What's new in 3.3.21
+
+- **Mac wallet-tool install check fixed.** The test-run no longer rejects wallet tools just because `--version` exits with a non-zero code; it only refuses tools that cannot launch or are missing a library.
+
 ## What's new in 3.3.20
 
 - **One-click wallet tools on a Mac.** Payments tab, step 1 is now "Install wallet tools" on a Mac. It copies the official 7.0.3 wallet tools you built (from SOLO-SYNC Wallet's tools folder or `~/safexcore-build`), test-runs both, then step 2 opens Terminal for the one-time view-key entry, same as Linux.

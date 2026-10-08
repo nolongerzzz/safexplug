@@ -39,9 +39,14 @@ const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
     const r = WS.installMacTools(d, (l) => lines.push(l), [tmp(), src]); assert.ok(r.ok, r.error);
     assert.ok(WS.status(d).tools); assert.ok(fs.statSync(WS.paths(d).rpc).mode & 0o100); assert.ok(lines.some((l) => /Copied/.test(l)));
   });
+  await t('mac install accepts tools whose --version exits non-zero but prints a version', async () => {
+    const src = tmp(), d = tmp();
+    for (const f of ['safex-wallet-cli', 'safex-wallet-rpc']) fs.writeFileSync(path.join(src, f), '#!/bin/sh\necho "Safex Oxygen 7.0.3"\nexit 1\n', { mode: 0o755 });
+    assert.ok(WS.installMacTools(d, () => {}, [src]).ok);
+  });
   await t('mac install refuses tools that do not start, and says what to do when none are found', async () => {
     const src = tmp(), d = tmp();
-    for (const f of ['safex-wallet-cli', 'safex-wallet-rpc']) fs.writeFileSync(path.join(src, f), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    for (const f of ['safex-wallet-cli', 'safex-wallet-rpc']) fs.writeFileSync(path.join(src, f), '#!/bin/sh\necho "dyld: Library not loaded: libboost" >&2\nexit 1\n', { mode: 0o755 });
     const r = WS.installMacTools(d, () => {}, [src]); assert.ok(!r.ok && /did not start/.test(r.error)); assert.ok(!WS.status(d).tools);
     const r2 = WS.installMacTools(d, () => {}, [tmp()]); assert.ok(!r2.ok && /No wallet tools found/.test(r2.error));
   });
